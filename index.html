@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>5B HOME GAMES</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body,button,input,select,textarea{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:700}
+button{cursor:pointer;border:none;background:none;color:inherit}
+:root{--bg:#000;--bg1:#0c0c0c;--bg2:#141414;--bg3:#1c1c1c;--bg4:#252525;--b:rgba(255,255,255,.07);--b2:rgba(255,255,255,.14);--b3:rgba(255,255,255,.26);--t:#fff;--t2:rgba(255,255,255,.5);--t3:rgba(255,255,255,.28);--g:#22c55e;--r:#ef4444;--a:#f59e0b;--bl:#3b82f6;--rr:6px;--rr2:10px}
+body{background:var(--bg);color:var(--t);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:2px}::-webkit-scrollbar-thumb{background:var(--bg4)}
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:2000}
+#loading.gone{display:none}
+.spinner{width:28px;height:28px;border:2px solid var(--b2);border-top-color:var(--t);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#pin-screen{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px;z-index:1900;overflow-y:auto}
+#pin-screen.show{display:flex}
+.plbl{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--t3);margin-bottom:8px;text-align:center}
+.ptitle{font-size:24px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:36px;text-align:center}
+.pdots{display:flex;gap:14px;margin-bottom:32px}
+.pd{width:14px;height:14px;border-radius:50%;background:var(--bg3);border:1px solid var(--b2);transition:background .12s}.pd.on{background:var(--t)}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:260px}
+.pk{background:var(--bg2);border:1px solid var(--b);border-radius:10px;padding:17px;font-size:22px;text-align:center;cursor:pointer;user-select:none;transition:background .1s}
+.pk:active{background:var(--bg3)}.pk.sm{font-size:15px;color:var(--t2)}.pk.nil{background:none;border:none;cursor:default}
+.perr{color:var(--r);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-top:12px;height:16px;text-align:center}
+.phint{font-size:11px;color:var(--t3);margin-top:16px;text-align:center;line-height:1.5;display:none;max-width:240px}
+.app-wrap{display:none}.app-wrap.show{display:block}
+.anav{background:rgba(0,0,0,.97);border-bottom:1px solid var(--b);display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:50}
+.anav::-webkit-scrollbar{display:none}
+.nbrand{padding:0 12px;display:flex;align-items:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;border-right:1px solid var(--b);flex-shrink:0}
+.nt{padding:13px 11px;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);white-space:nowrap;border-bottom:2px solid transparent;cursor:pointer;flex-shrink:0;transition:all .12s}
+.nt.on{color:var(--t);border-bottom-color:var(--t)}
+.nbadge{display:inline-block;background:var(--r);color:#fff;font-size:9px;border-radius:8px;padding:1px 5px;margin-left:3px;vertical-align:middle}
+#hmain,#pmain{max-width:820px;margin:0 auto;padding:18px 13px 100px}
+.vw{display:none}.vw.on{display:block}
+.lbl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--t3);margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.card{background:var(--bg1);border:1px solid var(--b);border-radius:var(--rr2);padding:15px;margin-bottom:8px}
+.csm{background:var(--bg2);border:1px solid var(--b);border-radius:var(--rr);padding:11px;margin-bottom:6px}
+.stat{background:var(--bg1);border:1px solid var(--b);border-radius:var(--rr);padding:12px}
+.slbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--t3);margin-bottom:4px}
+.sval{font-size:18px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+hr{border:none;border-top:1px solid var(--b);margin:14px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:10px 16px;border-radius:var(--rr);font-size:11px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:all .12s}
+.bp{background:#fff;color:#000}.bs{background:transparent;color:var(--t);border:1px solid var(--b2)}.bd{background:transparent;color:var(--r);border:1px solid rgba(239,68,68,.25)}
+.bgh{background:transparent;color:var(--t2);padding:8px 10px;border-radius:var(--rr)}
+.bsm{padding:7px 12px;font-size:10px}.bxs{padding:4px 8px;font-size:10px;border-radius:4px}.bfull{width:100%;display:flex}
+.fg{display:flex;flex-direction:column;margin-bottom:12px}
+.fl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;display:block}
+input,select,textarea{width:100%;background:var(--bg2);border:1px solid var(--b2);border-radius:var(--rr);color:var(--t);padding:10px 12px;font-size:14px;outline:none;-webkit-appearance:none;appearance:none;transition:border .1s}
+input:focus,select:focus,textarea:focus{border-color:var(--b3)}
+select option{background:var(--bg2)}
+textarea{resize:vertical;min-height:70px;font-weight:400}
+.bdg{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;letter-spacing:.04em;text-transform:uppercase}
+.bg-g{background:rgba(34,197,94,.12);color:var(--g);border:1px solid rgba(34,197,94,.25)}
+.bg-r{background:rgba(239,68,68,.12);color:var(--r);border:1px solid rgba(239,68,68,.25)}
+.bg-a{background:rgba(245,158,11,.12);color:var(--a);border:1px solid rgba(245,158,11,.25)}
+.bg-w{background:var(--bg3);color:var(--t2);border:1px solid var(--b2)}
+.fb{display:flex;align-items:center}.fbb{display:flex;align-items:center;justify-content:space-between}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}.mt24{margin-top:24px}
+.mb4{margin-bottom:4px}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}.mb20{margin-bottom:20px}.mb24{margin-bottom:24px}
+.g6{gap:6px}.g8{gap:8px}.g12{gap:12px}
+.pos{color:var(--g)}.neg{color:var(--r)}.mn{font-variant-numeric:tabular-nums}
+.ecard{background:var(--bg1);border:1px solid var(--b);border-radius:var(--rr);padding:13px;margin-bottom:7px}
+.birow{display:flex;gap:5px;align-items:center;margin-bottom:5px}
+.birow input{flex:1;min-width:55px;padding:7px 8px;font-size:13px}
+.birow select{flex:none;width:108px;padding:7px 8px;font-size:12px}
+.otrbtn{background:var(--bg3);border:1px solid var(--b2);border-radius:var(--rr);padding:6px 10px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;color:var(--t2);white-space:nowrap;flex-shrink:0}
+.otrbtn:active{background:var(--bg4);color:var(--t)}
+.sitem{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-radius:var(--rr);margin-bottom:5px;border:1px solid var(--b);gap:8px}
+.sowe{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.04)}
+.spaid{border-color:rgba(34,197,94,.25);background:rgba(34,197,94,.04)}
+.prow{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--b);cursor:pointer;transition:background .1s}
+.prow:last-child{border-bottom:none}.prow:active{background:var(--bg2)}
+.ava{width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--b2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px}
+.ava img{width:100%;height:100%;object-fit:cover}
+.avasm{width:30px;height:30px;border-radius:50%;background:var(--bg3);border:1px solid var(--b2);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px}
+.avasm img{width:100%;height:100%;object-fit:cover}
+.bal-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:var(--rr);margin-bottom:5px;border:1px solid var(--b)}
+.bal-owe{border-color:rgba(239,68,68,.2);background:rgba(239,68,68,.03)}
+.bal-owed{border-color:rgba(34,197,94,.2);background:rgba(34,197,94,.03)}
+.chart-wrap{background:var(--bg1);border:1px solid var(--b);border-radius:var(--rr2);padding:16px;margin-bottom:8px}
+.ctog{background:var(--bg3);border:1px solid var(--b);border-radius:var(--rr);padding:4px 10px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;color:var(--t2)}
+.ctog.on{background:var(--t);color:var(--bg)}
+.rsvp-wrap{display:flex;gap:8px;margin-bottom:16px}
+.rsvp-btn{flex:1;padding:14px 8px;border-radius:var(--rr);font-size:12px;letter-spacing:.1em;text-transform:uppercase;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.r-yes{background:rgba(34,197,94,.1);color:var(--g);border-color:rgba(34,197,94,.2)}.r-yes.sel{background:var(--g);color:#000;border-color:var(--g)}
+.r-maybe{background:rgba(245,158,11,.1);color:var(--a);border-color:rgba(245,158,11,.2)}.r-maybe.sel{background:var(--a);color:#000;border-color:var(--a)}
+.r-no{background:rgba(239,68,68,.1);color:var(--r);border-color:rgba(239,68,68,.2)}
+.avatar-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.live-banner{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);border-radius:var(--rr2);padding:14px 16px;margin-bottom:16px}
+.prof-hero{background:var(--bg1);border:1px solid var(--b);border-radius:var(--rr2);padding:24px;text-align:center;margin-bottom:8px}
+.prof-photo{width:80px;height:80px;border-radius:50%;background:var(--bg3);border:2px solid var(--b2);overflow:hidden;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;position:relative}
+.prof-photo img{width:100%;height:100%;object-fit:cover}
+.photo-edit-btn{position:absolute;bottom:0;right:0;background:#fff;color:#000;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:10px}
+.smini{background:var(--bg2);border-radius:var(--rr);padding:10px 6px;text-align:center}
+.smini-v{font-size:16px;margin-bottom:2px}.smini-l{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.08em}
+.badge-pill{background:var(--bg3);border:1px solid var(--b2);border-radius:20px;padding:4px 10px;font-size:11px;display:inline-flex;align-items:center;gap:4px}
+.ann-card{background:var(--bg2);border:1px solid var(--b);border-radius:var(--rr);padding:12px;margin-bottom:7px}
+.reward-card{background:var(--bg1);border:1px solid var(--b);border-radius:var(--rr2);padding:16px;margin-bottom:8px}
+.recap-card{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:var(--rr2);padding:14px 16px;margin-bottom:12px}
+.recap-card.loss{background:rgba(239,68,68,.06);border-color:rgba(239,68,68,.2)}
+.wl-item{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--b)}
+.wl-num{width:22px;height:22px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.standby-tag{background:rgba(34,197,94,.12);color:var(--g);border:1px solid rgba(34,197,94,.2);border-radius:4px;font-size:10px;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase}
+.maybe-tag{background:rgba(245,158,11,.12);color:var(--a);border:1px solid rgba(245,158,11,.2);border-radius:4px;font-size:10px;padding:2px 6px;letter-spacing:.06em;text-transform:uppercase}
+#mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:2000;align-items:flex-end;justify-content:center;padding:12px}
+#mo.on{display:flex}
+#mb{background:var(--bg1);border:1px solid var(--b2);border-radius:var(--rr2);width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.mh{padding:14px 18px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;background:var(--bg1);position:sticky;top:0;z-index:1}
+.mht{font-size:13px;text-transform:uppercase;letter-spacing:.07em}
+.mbdy{padding:18px}.mft{padding:14px 18px;border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#fff;color:#000;padding:10px 20px;border-radius:var(--rr);font-size:11px;letter-spacing:.08em;text-transform:uppercase;z-index:2100;opacity:0;transition:all .2s;white-space:nowrap;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#conf{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2100;align-items:center;justify-content:center;padding:20px}
+#conf.on{display:flex}
+#confbox{background:var(--bg1);border:1px solid var(--b2);border-radius:var(--rr2);padding:24px;max-width:320px;width:100%;text-align:center}
+.empty{text-align:center;padding:36px 16px;color:var(--t3);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.search-row{display:flex;gap:8px;margin-bottom:12px}
+.search-row input{flex:1}.search-row select{flex:none;width:140px}
+@media(max-width:500px){.g3{grid-template-columns:1fr 1fr}.g4{grid-template-columns:1fr 1fr}#hmain,#pmain{padding:14px 11px 100px}.birow select{width:90px}}
+@media(max-width:340px){.g2{grid-template-columns:1fr}.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="loading"><div class="spinner"></div><div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)">Loading...</div></div>
+<div id="pin-screen">
+  <div class="plbl" id="plbl">Enter PIN</div>
+  <div class="ptitle" id="ptitle">5B HOME GAMES</div>
+  <div class="pdots"><div class="pd" id="pd0"></div><div class="pd" id="pd1"></div><div class="pd" id="pd2"></div><div class="pd" id="pd3"></div></div>
+  <div class="ppad">
+    <div class="pk" onclick="pk('1')">1</div><div class="pk" onclick="pk('2')">2</div><div class="pk" onclick="pk('3')">3</div>
+    <div class="pk" onclick="pk('4')">4</div><div class="pk" onclick="pk('5')">5</div><div class="pk" onclick="pk('6')">6</div>
+    <div class="pk" onclick="pk('7')">7</div><div class="pk" onclick="pk('8')">8</div><div class="pk" onclick="pk('9')">9</div>
+    <div class="pk nil"></div><div class="pk" onclick="pk('0')">0</div><div class="pk sm" onclick="pdel()">&#x232B;</div>
+  </div>
+  <div class="perr" id="perr"></div>
+  <div class="phint" id="phint"></div>
+  <div id="player-hint" style="margin-top:20px;text-align:center">
+    <div style="font-size:11px;color:var(--t3);letter-spacing:.08em;margin-bottom:6px">Players — enter the player PIN</div>
+    <div style="font-size:11px;color:var(--t3);font-weight:400;line-height:1.5;max-width:220px;margin:0 auto">The player PIN is shared — set your own personal PIN after logging in to keep your stats private</div>
+  </div>
+</div>
+<div id="host-app" class="app-wrap">
+  <nav class="anav">
+    <div class="nbrand" id="hbrand">5B HOME GAMES</div>
+    <button class="nt on" data-hv="dashboard">Dashboard</button>
+    <button class="nt" data-hv="session">Session</button>
+    <button class="nt" data-hv="players">Players</button>
+    <button class="nt" data-hv="history">History</button>
+    <button class="nt" data-hv="bookings">Book<span class="nbadge" id="bk-badge" style="display:none">0</span></button>
+    <button class="nt" data-hv="settings">Settings</button>
+  </nav>
+  <div id="hmain">
+    <div id="hvw-dashboard" class="vw on"></div>
+    <div id="hvw-session" class="vw"></div>
+    <div id="hvw-players" class="vw"></div>
+    <div id="hvw-history" class="vw"></div>
+    <div id="hvw-bookings" class="vw"></div>
+    <div id="hvw-settings" class="vw"></div>
+  </div>
+</div>
+<div id="player-app" class="app-wrap">
+  <nav class="anav">
+    <div class="nbrand" id="pbrand">5B HOME GAMES</div>
+    <button class="nt on" data-pv="home">Home</button>
+    <button class="nt" data-pv="nextgame">Next Game</button>
+    <button class="nt" data-pv="stats">My Stats</button>
+    <button class="nt" data-pv="news">News</button>
+    <button class="nt" data-pv="rewards">Rewards</button>
+  </nav>
+  <div id="pmain">
+    <div id="pvw-home" class="vw on"></div>
+    <div id="pvw-nextgame" class="vw"></div>
+    <div id="pvw-stats" class="vw"></div>
+    <div id="pvw-news" class="vw"></div>
+    <div id="pvw-rewards" class="vw"></div>
+  </div>
+</div>
+<div id="mo"><div id="mb">
+  <div class="mh"><span class="mht" id="mt"></span><button class="bgh bsm btn" onclick="CM()">&#x2715;</button></div>
+  <div class="mbdy" id="md"></div>
+  <div class="mft" id="mf"></div>
+</div></div>
+<div id="toast"></div>
+<div id="conf"><div id="confbox">
+  <div id="conf-msg" style="font-size:14px;margin-bottom:20px;line-height:1.5"></div>
+  <div style="display:flex;gap:8px;justify-content:center">
+    <button class="btn bs" onclick="document.getElementById('conf').classList.remove('on')">Cancel</button>
+    <button class="btn bd" id="conf-ok">Confirm</button>
+  </div>
+</div></div>
+<script>
+const FC={apiKey:"AIzaSyBZlOPCT9yfEJHD_292ShfuZiO8muycil4",authDomain:"fiveb-home-games.firebaseapp.com",projectId:"fiveb-home-games",storageBucket:"fiveb-home-games.firebasestorage.app",messagingSenderId:"144158850012",appId:"1:144158850012:web:66757b26d1e792837fed19"};
+let db=null,stor=null,useFB=false;
+const LSK='5bhg_v4';
+function initFB(){try{if(!firebase.apps.length)firebase.initializeApp(FC);db=firebase.firestore();stor=firebase.storage();useFB=true;console.log('Firebase ready');}catch(e){console.warn(e);}}
+async function fbGet(){if(useFB&&db){try{const d=await db.collection('app').doc('data').get();return d.exists?d.data():null;}catch(e){}}try{return JSON.parse(localStorage.getItem(LSK));}catch(e){return null;}}
+async function fbSet(data){try{if(useFB&&db)await db.collection('app').doc('data').set(data);else localStorage.setItem(LSK,JSON.stringify(data));}catch(e){console.error(e);}}
+
+let APP={settings:{appName:'5B HOME GAMES',currency:'£',hostPin:'',playerPin:'',appLink:''},players:[],sessions:[],upcoming:null,announcements:[],rewards:[],wallOfFame:[],badgeTypes:[]};
+let access='',myPid='',pinBuf='',pinMode='check',pinFirst='',pinCtx='',pinCtx2='';
+let timerIv=null,chartInst=null,chartRange='term',curHV='dashboard',curPV='home',unsub=null,plSort='name',plSearch='';
+
+const DP=[
+  {id:'P001',name:'5B',nick:'',bio:'',photo:'',isHost:true,credit:0,notes:'Host',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P002',name:'KL',nick:'',bio:'',photo:'',isHost:false,credit:-40,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P003',name:'Daniel',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P004',name:'Charlie',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P005',name:'Henry',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P006',name:'Shashank',nick:'',bio:'',photo:'',isHost:false,credit:-275,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P007',name:'Markos',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P008',name:'Zayn',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P009',name:'Jonathon',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P010',name:'Piotr',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P011',name:'Jacob',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P012',name:'Zi',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P013',name:'Writh',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P014',name:'Jacky',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P015',name:'Toby',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P016',name:'DybaLL',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P017',name:'Soo',nick:'',bio:'',photo:'',isHost:false,credit:-140,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P018',name:'rydhem',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P019',name:'Marcus',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P020',name:'Josh',nick:'',bio:'',photo:'',isHost:false,credit:-500,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P021',name:'Allen',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P022',name:'Kingsley',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P023',name:'Bruce',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P024',name:'Shray',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P025',name:'Shayne',nick:'',bio:'',photo:'',isHost:false,credit:-50,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P026',name:'Abdallah',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P027',name:'Adhyan',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-03-02',badges:[],playerPin:'',lastRecap:null},
+  {id:'P028',name:'kabir',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-05-13',badges:[],playerPin:'',lastRecap:null},
+  {id:'P029',name:'aryaman',nick:'',bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:'2026-05-13',badges:[],playerPin:'',lastRecap:null},
+];
+const DS=[{id:'S006',date:'2026-05-13',blinds:'1/1',status:'closed',rake:570,notes:'Session 6',startTime:'2026-05-13T21:00:00',endTime:'2026-05-14T05:00:00',duration:480,expenses:[{id:'e1',desc:'food',amount:123,date:'2026-05-13',category:'food'}],entries:[
+  {pid:'P001',oc:0,bi:[{a:300,t:'Credit'}],stack:634,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P017',oc:0,bi:[{a:100,t:'Credit'},{a:100,t:'Credit'},{a:100,t:'Credit'},{a:100,t:'Credit'},{a:100,t:'Credit'}],stack:75,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P006',oc:0,bi:[{a:100,t:'Credit'},{a:150,t:'Credit'},{a:200,t:'Credit'},{a:200,t:'Cash'}],stack:0,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P009',oc:0,bi:[{a:100,t:'Credit'}],stack:915,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P018',oc:0,bi:[{a:100,t:'Credit'},{a:125,t:'Credit'},{a:50,t:'Credit'}],stack:46,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P002',oc:0,bi:[{a:100,t:'Credit'}],stack:0,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P020',oc:0,bi:[{a:100,t:'Credit'},{a:100,t:'Credit'},{a:100,t:'Credit'},{a:100,t:'Credit'},{a:100,t:'Credit'}],stack:0,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P025',oc:0,bi:[{a:100,t:'Credit'},{a:100,t:'Credit'},{a:150,t:'Credit'}],stack:300,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P004',oc:0,bi:[{a:100,t:'Credit'},{a:100,t:'Credit'}],stack:390,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P029',oc:0,bi:[{a:200,t:'Credit'}],stack:200,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+  {pid:'P028',oc:0,bi:[{a:200,t:'Credit'}],stack:200,settled:true,leftEarly:false,leaveTime:'',joinTime:''},
+]}];
+
+async function loadAll(){try{const d=await fbGet();if(d){APP=Object.assign({},APP,d);if(!APP.players||!APP.players.length){APP.players=JSON.parse(JSON.stringify(DP));APP.sessions=JSON.parse(JSON.stringify(DS));}}else{APP.players=JSON.parse(JSON.stringify(DP));APP.sessions=JSON.parse(JSON.stringify(DS));await save();}}catch(e){APP.players=JSON.parse(JSON.stringify(DP));APP.sessions=JSON.parse(JSON.stringify(DS));}}
+async function save(){try{await fbSet(APP);}catch(e){console.error(e);}}
+function subscribe(){if(!useFB||!db)return;if(unsub)unsub();unsub=db.collection('app').doc('data').onSnapshot(snap=>{if(snap.exists&&access){APP=Object.assign({},APP,snap.data());refresh();updBadge();}});}
+function refresh(){if(access==='host')renderH(curHV);else if(access==='player')renderP(curPV);}
+const C=()=>APP.settings.currency||'£';
+const fmt=n=>`${C()}${Math.round(Math.abs(n))}`;
+const fmtS=n=>n===0?`${C()}0`:n>0?`+${fmt(n)}`:`-${fmt(n)}`;
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const td=()=>new Date().toISOString().slice(0,10);
+const now=()=>new Date().toISOString();
+const fd=d=>{if(!d)return'';const[y,m,day]=d.split('-');return`${day}/${m}/${y}`;};
+const gp=id=>APP.players.find(p=>p.id===id);
+const eTB=e=>(e.bi||[]).reduce((s,b)=>s+(parseFloat(b.a)||0),0);
+const eP=e=>(e.stack===null||e.stack===undefined||e.stack==='')?null:parseFloat(e.stack)-eTB(e);
+const eNS=e=>{const p=eP(e);return p===null?null:p+(parseFloat(e.oc)||0);};
+const fmtDur=m=>`${Math.floor(m/60)}h ${m%60}m`;
+const ava=(p,sz=36)=>`<div class="ava" style="width:${sz}px;height:${sz}px;font-size:${Math.round(sz/2.7)}px;flex-shrink:0">${p&&p.photo?`<img src="${p.photo}"/>`:(p?(p.nick||p.name)[0]:'?')}</div>`;
+const avaSm=p=>`<div class="avasm" title="${p?p.name:''}">${p&&p.photo?`<img src="${p.photo}"/>`:(p?(p.nick||p.name)[0]:'?')}</div>`;
+function minXfers(bals){const ts=[],ds=bals.filter(b=>b.amt<-0.5).map(b=>({...b})),cs=bals.filter(b=>b.amt>0.5).map(b=>({...b}));while(ds.length&&cs.length){const d=ds[0],c=cs[0],a=Math.min(-d.amt,c.amt);if(a>0.5)ts.push({from:d.name,to:c.name,a});d.amt+=a;c.amt-=a;if(Math.abs(d.amt)<0.5)ds.shift();if(Math.abs(c.amt)<0.5)cs.shift();}return ts;}
+function pStats(pid){const cl=APP.sessions.filter(s=>s.status==='closed');let sess=0,buyins=0,profit=0,wins=0,best=-Infinity,worst=Infinity;const res=[];for(const s of cl){const e=(s.entries||[]).find(e=>e.pid===pid);if(!e)continue;sess++;buyins+=eTB(e);const p=eP(e);if(p!==null){profit+=p;if(p>best)best=p;if(p<worst)worst=p;if(p>0)wins++;res.push(p>0?'W':'L');}}let streak=0,lastR=null;for(let i=res.length-1;i>=0;i--){if(i===res.length-1){streak=1;lastR=res[i];}else if(res[i]===lastR)streak++;else break;}return{sess,buyins,profit,wins,wr:sess?Math.round(wins/sess*100):0,ab:sess?Math.round(buyins/sess):0,ap:sess?Math.round(profit/sess):0,best:best===-Infinity?0:best,worst:worst===Infinity?0:worst,streak,lastR};}
+function hStats(){const cl=APP.sessions.filter(s=>s.status==='closed');return{rake:cl.reduce((s,ss)=>s+(parseFloat(ss.rake)||0),0),exp:APP.sessions.reduce((s,ss)=>s+(ss.expenses||[]).reduce((a,e)=>a+(parseFloat(e.amount)||0),0),0),sess:cl.length,players:APP.players.filter(p=>p.on).length};}
+function getFish(s){let sh=null,fi=null,shP=-Infinity,fiP=Infinity;for(const e of(s.entries||[])){const p=eP(e);if(p===null)continue;if(p>shP){shP=p;sh=e.pid;}if(p<fiP){fiP=p;fi=e.pid;}}return{sh,fi,shP,fiP};}
+function avgStk(s){const w=(s.entries||[]).filter(e=>e.stack!==null&&e.stack!==undefined&&e.stack!=='');if(!w.length)return null;return Math.round(w.reduce((s,e)=>s+parseFloat(e.stack),0)/w.length);}
+function updBadge(){const up=APP.upcoming,wl=up?(up.waitlist||[]).length:0,badge=document.getElementById('bk-badge');if(badge){badge.textContent=wl;badge.style.display=wl>0?'inline-block':'none';}}
+function myBkStatus(){if(!APP.upcoming||!myPid)return null;const up=APP.upcoming;if((up.confirmed||[]).find(x=>(x.pid||x)===myPid))return'confirmed';if((up.interested||[]).find(x=>(x.pid||x)===myPid))return'interested';if((up.waitlist||[]).find(x=>(x.pid||x)===myPid))return'waitlist';return null;}
+function myBkEntry(){if(!APP.upcoming||!myPid)return null;const up=APP.upcoming;return(up.confirmed||[]).find(x=>(x.pid||x)===myPid)||(up.interested||[]).find(x=>(x.pid||x)===myPid)||(up.waitlist||[]).find(x=>(x.pid||x)===myPid)||null;}
+function pk(d){if(pinBuf.length>=4)return;pinBuf+=d;updDots();if(pinBuf.length===4)setTimeout(submitPin,150);}
+function pdel(){pinBuf=pinBuf.slice(0,-1);updDots();}
+function updDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.toggle('on',i<pinBuf.length);}
+async function submitPin(){
+  if(pinMode==='check'){
+    const byP=APP.players.find(p=>p.on&&p.playerPin&&p.playerPin===pinBuf);
+    if(byP){myPid=byP.id;access='player';unlockPlayer();return;}
+    if(APP.settings.hostPin&&pinBuf===APP.settings.hostPin){access='host';unlockHost();return;}
+    if(APP.settings.playerPin&&pinBuf===APP.settings.playerPin){showWhoAreYou();return;}
+    if(!APP.settings.hostPin&&!APP.settings.playerPin){pinCtx='host';startPinSet('Set host PIN','First time — you will set a player PIN next');return;}
+    pinErr('Wrong PIN');pinBuf='';updDots();
+  }else if(pinMode==='set1'){pinFirst=pinBuf;pinBuf='';updDots();pinMode='set2';document.getElementById('plbl').textContent='Confirm PIN';}
+  else if(pinMode==='set2'){if(pinBuf===pinFirst){await doPinSet(pinBuf);}else{pinErr("PINs didn't match");pinBuf='';pinFirst='';startPinSet(pinCtx==='host'?'Set host PIN':'Set player PIN','');}}
+}
+function startPinSet(lbl,hint){pinMode='set1';pinBuf='';pinFirst='';updDots();document.getElementById('plbl').textContent=lbl;const h=document.getElementById('phint');if(hint){h.textContent=hint;h.style.display='block';}else h.style.display='none';const ph=document.getElementById('player-hint');if(ph)ph.style.display='none';}
+async function doPinSet(pin){
+  if(pinCtx==='host'){APP.settings.hostPin=pin;await save();pinCtx='player';startPinSet('Set player PIN','Players use this to access their profiles');}
+  else if(pinCtx==='player'){APP.settings.playerPin=pin;await save();document.getElementById('phint').style.display='none';access='host';unlockHost();}
+  else if(pinCtx==='personal'){const p=gp(pinCtx2);if(p){p.playerPin=pin;await save();}access='player';unlockPlayer();}
+  else if(pinCtx==='ch-host'){APP.settings.hostPin=pin;await save();CM();toast('Host PIN updated');}
+  else if(pinCtx==='ch-player'){APP.settings.playerPin=pin;await save();CM();toast('Player PIN updated');}
+  else if(pinCtx==='ch-personal'){const p=gp(pinCtx2);if(p){p.playerPin=pin;await save();}CM();toast('PIN updated');}
+  pinBuf='';updDots();
+}
+function pinErr(m){const el=document.getElementById('perr');el.textContent=m;setTimeout(()=>el.textContent='',2500);}
+function showWhoAreYou(){const active=APP.players.filter(p=>p.on&&!p.isHost).sort((a,b)=>a.name.localeCompare(b.name));OM('Who are you?',`<div style="font-size:12px;color:var(--t2);margin-bottom:14px">Select your profile</div><div style="background:var(--bg2);border-radius:var(--rr);overflow:hidden">${active.map(p=>`<div class="prow" onclick="selectMe('${p.id}')">${ava(p)}<div style="margin-left:10px"><div style="font-size:14px">${p.name}</div>${p.nick?`<div style="font-size:11px;color:var(--t2)">${p.nick}</div>`:''}</div></div>`).join('')}</div>`,'');}
+function selectMe(pid){myPid=pid;CM();const p=gp(pid);if(p&&!p.playerPin){OM('Set Personal PIN',`<div style="font-size:13px;color:var(--t2);margin-bottom:12px">Set a personal PIN to log in directly next time — no need to select your name.</div>`,`<button class="btn bs" onclick="CM();access='player';unlockPlayer()">Skip</button><button class="btn bp" onclick="startPersonalPin('${pid}')">Set PIN</button>`);}else{access='player';unlockPlayer();}}
+function startPersonalPin(pid){CM();pinCtx='personal';pinCtx2=pid;startPinSet('Choose your personal PIN','Use this next time to log in directly');}
+function unlockHost(){document.getElementById('pin-screen').classList.remove('show');document.getElementById('host-app').classList.add('show');document.getElementById('hbrand').textContent=APP.settings.appName;document.querySelectorAll('[data-hv]').forEach(t=>t.addEventListener('click',()=>hostNav(t.dataset.hv)));document.getElementById('mo').addEventListener('click',e=>{if(e.target===document.getElementById('mo'))CM();});subscribe();renderH('dashboard');updBadge();if(APP.sessions.find(s=>s.status==='open'))startTimer();}
+function unlockPlayer(){document.getElementById('pin-screen').classList.remove('show');document.getElementById('player-app').classList.add('show');document.getElementById('pbrand').textContent=APP.settings.appName;document.querySelectorAll('[data-pv]').forEach(t=>t.addEventListener('click',()=>playerNav(t.dataset.pv)));document.getElementById('mo').addEventListener('click',e=>{if(e.target===document.getElementById('mo'))CM();});subscribe();renderP('home');}
+function hostNav(v){document.querySelectorAll('[data-hv]').forEach(t=>t.classList.toggle('on',t.dataset.hv===v));document.querySelectorAll('#hmain .vw').forEach(el=>el.classList.remove('on'));document.getElementById('hvw-'+v).classList.add('on');curHV=v;renderH(v);}
+function playerNav(v){document.querySelectorAll('[data-pv]').forEach(t=>t.classList.toggle('on',t.dataset.pv===v));document.querySelectorAll('#pmain .vw').forEach(el=>el.classList.remove('on'));document.getElementById('pvw-'+v).classList.add('on');curPV=v;renderP(v);}
+function renderH(v){({dashboard:RDash,session:RSess,players:RPl,history:RHist,bookings:RBook,settings:RSett})[v]?.();}
+function renderP(v){({home:RPHome,nextgame:RPNext,stats:RPStats,news:RPNews,rewards:RPRew})[v]?.();}
+function OM(t,b,f){document.getElementById('mt').textContent=t;document.getElementById('md').innerHTML=b;document.getElementById('mf').innerHTML=f||'';document.getElementById('mo').classList.add('on');}
+function CM(){document.getElementById('mo').classList.remove('on');}
+function confirm2(msg,cb){document.getElementById('conf-msg').textContent=msg;const ok=document.getElementById('conf-ok'),n=ok.cloneNode(true);ok.parentNode.replaceChild(n,ok);n.onclick=()=>{document.getElementById('conf').classList.remove('on');cb();};document.getElementById('conf').classList.add('on');}
+let _tt;function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('on'),2200);}
+function startTimer(){if(timerIv)clearInterval(timerIv);timerIv=setInterval(()=>{const aS=APP.sessions.find(s=>s.status==='open'),el=document.getElementById('sess-timer');if(!el||!aS||!aS.startTime)return;const e=Math.floor((Date.now()-new Date(aS.startTime).getTime())/60000);el.textContent=`${String(Math.floor(e/60)).padStart(2,'0')}:${String(e%60).padStart(2,'0')}`;},15000);}
+function RDash(){
+  const el=document.getElementById('hvw-dashboard'),hs=hStats(),aS=APP.sessions.find(s=>s.status==='open');
+  const out=APP.players.filter(p=>p.on&&p.credit!==0).sort((a,b)=>a.credit-b.credit);
+  const net=hs.rake-hs.exp;
+  let h=`<div class="lbl mb16">Overview</div><div class="g4 mb8"><div class="stat"><div class="slbl">Rake</div><div class="sval pos">${fmt(hs.rake)}</div></div><div class="stat"><div class="slbl">Sessions</div><div class="sval">${hs.sess}</div></div><div class="stat"><div class="slbl">Players</div><div class="sval">${hs.players}</div></div><div class="stat"><div class="slbl">Net Income</div><div class="sval ${net>=0?'pos':'neg'}">${fmtS(net)}</div></div></div>`;
+  if(aS){const pot=(aS.entries||[]).reduce((s,e)=>s+eTB(e),0),avg=avgStk(aS);const el2=aS.startTime?Math.floor((Date.now()-new Date(aS.startTime).getTime())/60000):0;h+=`<div class="card mb16" style="border-color:rgba(34,197,94,.3);cursor:pointer" onclick="hostNav('session')"><div class="fbb mb8"><div><div class="lbl" style="margin-bottom:2px">Live Session</div><div style="font-size:15px">${fd(aS.date)} · ${aS.blinds||'—'}</div></div><span class="bdg bg-g">Live</span></div><div class="g3"><div class="stat"><div class="slbl">Pot</div><div class="sval">${fmt(pot)}</div></div><div class="stat"><div class="slbl">Avg Stack</div><div class="sval">${avg!==null?fmt(avg):'—'}</div></div><div class="stat"><div class="slbl">Time</div><div class="sval">${String(Math.floor(el2/60)).padStart(2,'0')}:${String(el2%60).padStart(2,'0')}</div></div></div></div>`;}
+  else h+=`<div class="mb16"><button class="btn bp bfull" onclick="hostNav('session')">+ New Session</button></div>`;
+  const closed=[...APP.sessions].filter(s=>s.status==='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  if(closed.length)h+=`<div class="chart-wrap mb16"><div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Rake per Session</div><div style="display:flex;gap:4px"><div class="ctog ${chartRange==='1w'?'on':''}" onclick="setCR('1w')">1W</div><div class="ctog ${chartRange==='1m'?'on':''}" onclick="setCR('1m')">1M</div><div class="ctog ${chartRange==='term'?'on':''}" onclick="setCR('term')">Term</div></div></div><canvas id="rake-chart" height="150"></canvas></div>`;
+  h+=`<div class="lbl mb12">Outstanding Balances</div>`;
+  if(!out.length)h+=`<div class="empty">All settled</div>`;
+  else out.forEach(p=>{const a=p.credit;h+=`<div class="bal-row ${a<0?'bal-owe':'bal-owed'}"><div class="fb g8">${ava(p,28)}<div><div style="font-size:13px">${p.name}${p.nick?` <span style="color:var(--t2);font-size:11px">${p.nick}</span>`:''}</div><div style="font-size:10px;color:var(--t3)">${a<0?'Owes house':'House owes'}</div></div></div><div class="${a<0?'neg':'pos'} mn" style="font-size:15px">${fmt(Math.abs(a))}</div></div>`;});
+  const allExp=APP.sessions.reduce((arr,s)=>arr.concat((s.expenses||[]).map(e=>({...e,sd:s.date}))),[]).sort((a,b)=>(b.date||b.sd||'').localeCompare(a.date||a.sd||''));
+  h+=`<div class="fbb mt20 mb12"><div class="lbl" style="margin-bottom:0">Expenses</div><button class="btn bs bsm" onclick="openExpM()">+ Add</button></div>`;
+  if(!allExp.length)h+=`<div class="empty">No expenses</div>`;
+  else allExp.forEach(e=>{h+=`<div class="fbb" style="padding:8px 0;border-bottom:1px solid var(--b)"><div><div style="font-size:13px">${e.desc}${e.category?` <span class="bdg bg-w" style="margin-left:5px">${e.category}</span>`:''}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">${fd(e.date||e.sd)}</div></div><div class="neg mn">${fmt(e.amount)}</div></div>`;});
+  if((APP.wallOfFame||[]).length){h+=`<div class="lbl mt20 mb12">Wall of Fame</div>`;APP.wallOfFame.forEach(w=>{h+=`<div class="ann-card"><div style="font-size:13px;font-weight:400">${w.text}</div><div style="font-size:10px;color:var(--t3);margin-top:5px">${fd(w.date)}</div></div>`;});}
+  el.innerHTML=h;if(closed.length)buildChart();
+}
+function setCR(r){chartRange=r;RDash();}
+function buildChart(){const ctx=document.getElementById('rake-chart');if(!ctx)return;if(chartInst){chartInst.destroy();chartInst=null;}const days={'1w':7,'1m':30,'term':70}[chartRange]||70;const cutoff=new Date(Date.now()-days*864e5);let ss=[...APP.sessions].filter(s=>s.status==='closed').sort((a,b)=>a.date.localeCompare(b.date));if(chartRange!=='term')ss=ss.filter(s=>new Date(s.date)>=cutoff);if(!ss.length)return;const labels=ss.map((_,i)=>`S${i+1}`),rakes=ss.map(s=>parseFloat(s.rake)||0),pcts=rakes.map((r,i)=>i===0?null:Math.round((r-rakes[i-1])/Math.max(rakes[i-1],1)*100));chartInst=new Chart(ctx,{type:'line',data:{labels,datasets:[{data:rakes,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.08)',borderWidth:2,pointBackgroundColor:'#22c55e',pointRadius:4,tension:0.3,fill:true}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const i=c.dataIndex,pct=pcts[i];return`${C()}${c.raw}${pct!==null?(pct>=0?` (+${pct}% vs prev)`:` (${pct}% vs prev)`):' (baseline)'}`;} }}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.4)',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'rgba(255,255,255,.4)',font:{size:10},callback:v=>`${C()}${v}`},beginAtZero:true}}}});}
+function openExpM(){OM('Add Expense',`<div class="fg"><label class="fl">Description</label><input id="ex-d" placeholder="Food, cards..."/></div><div class="fg"><label class="fl">Amount</label><input id="ex-a" type="number" min="0" step="1" inputmode="numeric" placeholder="0"/></div><div class="fg"><label class="fl">Category</label><select id="ex-cat"><option value="">None</option><option value="food">Food</option><option value="cards">Cards & Chips</option><option value="venue">Venue</option><option value="other">Other</option></select></div><div class="fg"><label class="fl">Date</label><input id="ex-dt" type="date" value="${td()}"/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveExp()">Save</button>`);}
+async function saveExp(){const desc=document.getElementById('ex-d').value.trim(),amount=parseFloat(document.getElementById('ex-a').value)||0,date=document.getElementById('ex-dt').value,cat=document.getElementById('ex-cat').value;if(!desc||!amount)return;const exp={id:uid(),desc,amount,date,category:cat};const aS=APP.sessions.find(s=>s.status==='open'),t=aS||[...APP.sessions].filter(s=>s.status==='closed').sort((a,b)=>b.date.localeCompare(a.date))[0];if(t){if(!t.expenses)t.expenses=[];t.expenses.push(exp);}await save();CM();RDash();toast('Expense added');}
+
+function RSess(){const el=document.getElementById('hvw-session'),aS=APP.sessions.find(s=>s.status==='open');if(!aS)renderNewSess(el);else renderActiveSess(el,aS);}
+function renderNewSess(el){const up=APP.upcoming,conf=(up&&up.confirmed)||[];el.innerHTML=`<div class="lbl mb16">New Session</div><div class="card"><div class="fg"><label class="fl">Date</label><input id="ns-d" type="date" value="${td()}"/></div><div class="fg"><label class="fl">Blinds</label><select id="ns-b"><option value="1/1">${C()}1/${C()}1</option><option value="1/2">${C()}1/${C()}2</option><option value="2/2">${C()}2/${C()}2</option><option value="2/5">${C()}2/${C()}5</option></select></div><div class="fg"><label class="fl">Notes</label><input id="ns-n" placeholder="Optional..."/></div>${conf.length?`<div style="font-size:12px;color:var(--t2);margin-bottom:10px">${conf.length} confirmed from booking</div><button class="btn bp bfull mb8" style="background:var(--g);color:#000" onclick="createSess(true)">Start + Add ${conf.length} Confirmed</button><div style="font-size:10px;color:var(--t3);text-align:center;margin-bottom:8px">or</div>`:''}<button class="btn bp bfull" onclick="createSess(false)">Start Empty Session</button></div><div class="lbl mt20 mb12">Recent</div>${recentH()}`;}
+function recentH(){const cl=[...APP.sessions].filter(s=>s.status==='closed').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3);if(!cl.length)return'<div class="empty">No past sessions</div>';return cl.map(s=>`<div class="csm fbb" style="cursor:pointer" onclick="viewS('${s.id}')"><div><div style="font-size:13px;color:var(--t2)">${fd(s.date)} · ${s.blinds||'—'}</div><div style="font-size:11px;color:var(--t3);margin-top:2px">${(s.entries||[]).length} players · ${fmt((s.entries||[]).reduce((sum,e)=>sum+eTB(e),0))} pot · Rake ${fmt(s.rake||0)}</div>${s.notes?`<div style="font-size:10px;color:var(--t3);margin-top:2px">${s.notes}</div>`:''}</div><span class="bdg bg-w" style="flex:none">View</span></div>`).join('');}
+async function createSess(withConf){const date=document.getElementById('ns-d').value,blinds=document.getElementById('ns-b').value,notes=document.getElementById('ns-n').value;const s={id:uid(),date,blinds,notes,status:'open',rake:0,startTime:now(),endTime:null,duration:null,expenses:[],entries:[]};if(withConf&&APP.upcoming){(APP.upcoming.confirmed||[]).forEach(e=>{const pid=e.pid||e,p=gp(pid);if(p&&p.on)s.entries.push({pid,oc:p.credit||0,bi:[{a:100,t:'Cash'}],stack:null,settled:false,leftEarly:false,leaveTime:e.leaveTime||'',joinTime:''});});}APP.sessions.push(s);await save();startTimer();RSess();toast('Session started');}
+function renderActiveSess(el,s){
+  const pot=(s.entries||[]).reduce((sum,e)=>sum+eTB(e),0),avg=avgStk(s),allSt=(s.entries||[]).length>0&&(s.entries||[]).every(e=>e.stack!==null&&e.stack!==undefined&&e.stack!=='');
+  const elapsed=s.startTime?Math.floor((Date.now()-new Date(s.startTime).getTime())/60000):0;
+  let h=`<div class="fbb mb12"><div><div class="lbl" style="margin-bottom:2px">Live Session</div><div style="font-size:15px">${fd(s.date)} · ${s.blinds||'—'}</div></div><span class="bdg bg-g">Open</span></div>
+  <div class="card mb12" style="text-align:center"><div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Session Time</div><div id="sess-timer" style="font-size:32px;letter-spacing:.04em;font-variant-numeric:tabular-nums">${String(Math.floor(elapsed/60)).padStart(2,'0')}:${String(elapsed%60).padStart(2,'0')}</div></div>
+  <div class="g3 mb16"><div class="stat"><div class="slbl">Players</div><div class="sval">${(s.entries||[]).length}</div></div><div class="stat"><div class="slbl">Pot</div><div class="sval">${fmt(pot)}</div></div><div class="stat"><div class="slbl">Avg Stack</div><div class="sval">${avg!==null?fmt(avg):'—'}</div></div></div>
+  <div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Players</div><button class="btn bs bsm" onclick="openAddP('${s.id}')">+ Add Player</button></div>`;
+  if(!(s.entries||[]).length)h+=`<div class="empty">No players yet</div>`;
+  else s.entries.forEach(e=>{const p=gp(e.pid);if(!p)return;const tot=eTB(e),ns=eNS(e),rebuys=Math.max(0,(e.bi||[]).length-1);
+    h+=`<div class="ecard"><div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;gap:8px">
+      <div class="fb g8" style="flex:1;min-width:0">${ava(p,32)}<div><div style="font-size:14px">${p.name}${p.isHost?'<span style="font-size:9px;color:var(--t3);margin-left:4px">HOST</span>':''}</div>
+      <div class="fb g6" style="margin-top:3px;flex-wrap:wrap">${rebuys>0?`<span style="font-size:10px;color:var(--a)">${rebuys} rebuy${rebuys>1?'s':''}</span>`:''}${e.leaveTime?`<span style="font-size:10px;color:var(--r)">Leaving ${e.leaveTime}</span>`:''}${e.joinTime?`<span style="font-size:10px;color:var(--bl)">Joined ${e.joinTime}</span>`:''}${e.oc?`<span style="font-size:10px;color:var(--t3)">Cr: <span class="${e.oc<0?'neg':'pos'}">${fmtS(e.oc)}</span></span>`:''}</div></div></div>
+      <div class="fb g6" style="flex:none"><button class="otrbtn" onclick="quickRebuy('${s.id}','${e.pid}')">+${C()}100</button><div style="text-align:right"><div style="font-size:10px;color:var(--t3)">In</div><div style="font-size:13px">${fmt(tot)}</div></div><button class="bgh bxs btn" onclick="removeP('${s.id}','${e.pid}')">&#x2715;</button></div></div>
+    ${(e.bi||[]).map((b,bi)=>`<div class="birow"><input type="number" value="${b.a}" min="0" step="1" inputmode="numeric" onchange="upBI('${s.id}','${e.pid}',${bi},'a',this.value)"/><select onchange="upBI('${s.id}','${e.pid}',${bi},'t',this.value)"><option value="Cash" ${b.t==='Cash'?'selected':''}>Cash</option><option value="Transfer" ${b.t==='Transfer'?'selected':''}>Transfer</option><option value="Credit" ${b.t==='Credit'?'selected':''}>Credit</option></select><button class="bgh bxs btn" style="flex:none;padding:7px 8px" onclick="removeBI('${s.id}','${e.pid}',${bi})">&#x2715;</button></div>`).join('')}
+    <button class="btn bs bxs mb8" style="margin-top:3px" onclick="addBI('${s.id}','${e.pid}')">+ Rebuy</button>
+    <div class="g2 mb8"><div class="fg" style="margin-bottom:0"><label class="fl">Joined at</label><input type="time" value="${e.joinTime||''}" onchange="upEntry('${s.id}','${e.pid}','joinTime',this.value)"/></div><div class="fg" style="margin-bottom:0"><label class="fl">Leaving at</label><input type="time" value="${e.leaveTime||''}" onchange="upEntry('${s.id}','${e.pid}','leaveTime',this.value)"/></div></div>
+    <div class="fg mb4"><label class="fl">Ending Stack</label><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${e.stack!==null&&e.stack!==undefined?e.stack:''}" onchange="upStack('${s.id}','${e.pid}',this.value)"/></div>
+    ${ns!==null?`<div class="fbb mt8" style="padding:8px 10px;background:var(--bg3);border-radius:var(--rr)"><div style="font-size:10px;color:var(--t3)">Net settle</div><div class="mn ${ns>=0?'pos':'neg'}" style="font-size:14px">${fmtS(ns)}</div></div>`:''}
+    </div>`;});
+  h+=`<hr><div class="fg"><label class="fl">Rake (${C()})</label><input type="number" min="0" step="1" inputmode="numeric" placeholder="0" value="${s.rake||''}" onchange="upRake('${s.id}',this.value)"/></div><div class="fb g8" style="flex-wrap:wrap">${allSt?`<button class="btn bp" onclick="endSess('${s.id}')">End &amp; Settle</button>`:''}<button class="btn bd" onclick="abandS('${s.id}')">Abandon</button></div>`;
+  el.innerHTML=h;startTimer();
+}
+async function quickRebuy(sid,pid){const s=APP.sessions.find(s=>s.id===sid),e=s&&s.entries.find(e=>e.pid===pid);if(!e)return;e.bi.push({a:100,t:'Cash'});await save();RSess();}
+async function addBI(sid,pid){const s=APP.sessions.find(s=>s.id===sid),e=s&&s.entries.find(e=>e.pid===pid);if(!e)return;e.bi.push({a:100,t:'Cash'});await save();RSess();}
+async function removeBI(sid,pid,bi){const s=APP.sessions.find(s=>s.id===sid),e=s&&s.entries.find(e=>e.pid===pid);if(!e||e.bi.length<=1)return;e.bi.splice(bi,1);await save();RSess();}
+async function upBI(sid,pid,bi,f,v){const s=APP.sessions.find(s=>s.id===sid),e=s&&s.entries.find(e=>e.pid===pid);if(!e)return;if(f==='a')e.bi[bi].a=parseFloat(v)||0;else e.bi[bi].t=v;await save();RSess();}
+async function upStack(sid,pid,v){const s=APP.sessions.find(s=>s.id===sid),e=s&&s.entries.find(e=>e.pid===pid);if(!e)return;e.stack=v===''?null:parseFloat(v);await save();RSess();}
+async function upRake(sid,v){const s=APP.sessions.find(s=>s.id===sid);if(s){s.rake=parseFloat(v)||0;await save();}}
+async function upEntry(sid,pid,field,val){const s=APP.sessions.find(s=>s.id===sid),e=s&&s.entries.find(e=>e.pid===pid);if(!e)return;e[field]=val;await save();}
+async function removeP(sid,pid){const s=APP.sessions.find(s=>s.id===sid);if(s){s.entries=s.entries.filter(e=>e.pid!==pid);await save();RSess();}}
+function openAddP(sid){const s=APP.sessions.find(s=>s.id===sid),inS=new Set((s.entries||[]).map(e=>e.pid)),avail=APP.players.filter(p=>p.on&&!inS.has(p.id)).sort((a,b)=>a.name.localeCompare(b.name));if(!avail.length){toast('All players in session');return;}const opts=avail.map(p=>`<option value="${p.id}">${p.name}${p.credit?` (${p.credit<0?'owes ':'owed '}${fmt(Math.abs(p.credit))})`:''}</option>`).join('');OM('Add Player',`<div class="fg"><label class="fl">Player</label><select id="ap-p">${opts}</select></div><div class="fg"><label class="fl">Buy-in Amount</label><input id="ap-a" type="number" value="100" min="0" step="1" inputmode="numeric"/></div><div class="fg"><label class="fl">Type</label><select id="ap-t"><option value="Cash">Cash</option><option value="Transfer">Bank Transfer</option><option value="Credit">Credit</option></select></div><div class="fg"><label class="fl">Joined at (optional)</label><input id="ap-jt" type="time"/></div><div class="fg"><label class="fl">Leaving at (optional)</label><input id="ap-lt" type="time"/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="addToSess('${sid}')">Add</button>`);}
+async function addToSess(sid){const pid=document.getElementById('ap-p').value,amount=parseFloat(document.getElementById('ap-a').value)||0,type=document.getElementById('ap-t').value,joinTime=document.getElementById('ap-jt').value,leaveTime=document.getElementById('ap-lt').value;const s=APP.sessions.find(s=>s.id===sid),p=gp(pid);if(!s||!p)return;s.entries.push({pid,oc:p.credit||0,bi:[{a:amount,t:type}],stack:null,settled:false,leftEarly:false,joinTime,leaveTime});await save();CM();RSess();toast(`${p.name} added`);}
+function endSess(sid){const s=APP.sessions.find(s=>s.id===sid);if(!s)return;const bals=s.entries.map(e=>{const p=gp(e.pid);return{pid:e.pid,name:p?p.name:e.pid,amt:eNS(e)||0};}).filter(b=>Math.abs(b.amt)>0.5);const xfers=minXfers(bals.map(b=>({...b})));const{sh,fi,shP,fiP}=getFish(s);let body='';if(sh||fi){body+=`<div class="mb12">`;if(sh){const p=gp(sh);body+=`<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:var(--rr);padding:10px 13px;margin-bottom:6px;display:flex;align-items:center;gap:10px"><div style="font-size:14px;color:var(--g)">Shark</div><div><div style="font-size:13px">${p?p.name:sh}</div><div style="font-size:11px;color:var(--g)">+${fmt(shP)}</div></div></div>`;}if(fi&&fi!==sh){const p=gp(fi);body+=`<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:var(--rr);padding:10px 13px;display:flex;align-items:center;gap:10px"><div style="font-size:14px;color:var(--r)">Fish</div><div><div style="font-size:13px">${p?p.name:fi}</div><div style="font-size:11px;color:var(--r)">${fmtS(fiP)}</div></div></div>`;}body+=`</div>`;}
+body+=`<div class="lbl mb10">Per Player</div>`;s.entries.forEach(e=>{const p=gp(e.pid),ns=eNS(e),pr=eP(e);if(ns===null)return;body+=`<div class="sitem ${ns<0?'sowe':'spaid'}"><div style="flex:1;min-width:0"><div style="font-size:13px">${p?p.name:e.pid}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">In: ${fmt(eTB(e))} · Stack: ${fmt(e.stack||0)} · P/L: <span class="${pr>=0?'pos':'neg'}">${fmtS(pr||0)}</span>${e.oc?` · Opening: ${fmtS(e.oc)}`:''}</div></div><div class="mn ${ns<0?'neg':'pos'}" style="font-size:15px;flex:none;margin-left:8px">${fmtS(ns)}</div></div>`;});
+if(xfers.length){body+=`<div class="lbl mt14 mb10">Transfers</div>`;xfers.forEach(t=>{body+=`<div class="sitem" style="background:var(--bg2)"><div style="font-size:13px"><span class="neg">${t.from}</span> to <span class="pos">${t.to}</span></div><div style="font-size:14px;flex:none">${fmt(t.a)}</div></div>`;});}
+body+=`<hr><div class="fg"><label class="fl">Rake Collected</label><input id="fr" type="number" min="0" step="1" inputmode="numeric" value="${s.rake||0}"/></div><div class="fg"><label class="fl">Notes</label><input id="fn" value="${s.notes||''}" placeholder="Notes..."/></div>`;
+OM('Settlement',body,`<button class="btn bs" onclick="CM()">Back</button><button class="btn bp" onclick="closeSess('${sid}')">Close Session</button>`);}
+async function closeSess(sid){const s=APP.sessions.find(s=>s.id===sid);if(!s)return;const elapsed=s.startTime?Math.floor((Date.now()-new Date(s.startTime).getTime())/60000):0;s.rake=parseFloat(document.getElementById('fr').value)||0;s.notes=document.getElementById('fn').value;s.status='closed';s.endTime=now();s.duration=elapsed;for(const e of s.entries){const ns=eNS(e);if(ns===null)continue;const p=gp(e.pid);if(!p)continue;p.credit=ns<0?Math.round(ns):0;e.settled=true;const pr=eP(e);if(pr!==null)p.lastRecap={sessId:s.id,profit:Math.round(pr),date:s.date};}if(timerIv){clearInterval(timerIv);timerIv=null;}const rph=elapsed>0?Math.round(s.rake/(elapsed/60)):0;await save();CM();RSess();RDash();toast(`Closed · ${fmtDur(elapsed)} · ${fmt(s.rake)} rake · ${C()}${rph}/hr`);}
+function abandS(sid){confirm2('Abandon session?',async()=>{APP.sessions=APP.sessions.filter(s=>s.id!==sid);if(timerIv){clearInterval(timerIv);timerIv=null;}await save();RSess();toast('Abandoned');});}
+function viewS(sid){const s=APP.sessions.find(s=>s.id===sid);if(!s)return;const dur=s.duration?fmtDur(s.duration):'—',rph=s.duration&&s.rake?Math.round(s.rake/(s.duration/60)):0;let body=`<div style="font-size:11px;color:var(--t3);margin-bottom:14px">${fd(s.date)} · ${s.blinds||'—'} · Rake: ${fmt(s.rake||0)} · ${dur}${rph?` · ${C()}${rph}/hr`:''}</div>`;s.entries.forEach(e=>{const p=gp(e.pid),pr=eP(e),ns=eNS(e);body+=`<div class="fbb" style="padding:8px 0;border-bottom:1px solid var(--b)"><div style="flex:1;min-width:0"><div style="font-size:13px">${p?p.name:e.pid}${e.leaveTime?`<span style="font-size:10px;color:var(--a);margin-left:6px">Left ${e.leaveTime}</span>`:''}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">In: ${fmt(eTB(e))} · Stack: ${fmt(e.stack||0)}${e.oc?` · Opening: ${fmtS(e.oc)}`:''}</div></div><div style="text-align:right;flex:none;margin-left:8px"><div class="mn ${pr>=0?'pos':'neg'}">${fmtS(pr||0)}</div>${ns!==null&&Math.round(ns)!==Math.round(pr||0)?`<div style="font-size:10px;color:var(--t3)">Net ${fmtS(ns)}</div>`:''}</div></div>`;});if(s.notes)body+=`<div style="margin-top:12px;font-size:11px;color:var(--t3)">${s.notes}</div>`;OM(`Session ${fd(s.date)}`,body,`<button class="btn bs" onclick="CM()">Close</button>${s.status==='closed'?`<button class="btn bs bsm" onclick="reopenS('${s.id}')">Reopen</button>`:''}<button class="btn bs bsm" onclick="exportPDF('${s.id}')">PDF</button><button class="btn bd bsm" onclick="delS('${s.id}')">Delete</button>`);}
+function reopenS(sid){if(APP.sessions.find(s=>s.status==='open')){toast('Close active session first');return;}const s=APP.sessions.find(s=>s.id===sid);if(!s)return;s.status='open';s.endTime=null;save();CM();hostNav('session');toast('Reopened');}
+function delS(sid){confirm2('Delete permanently?',async()=>{APP.sessions=APP.sessions.filter(s=>s.id!==sid);await save();CM();RHist();toast('Deleted');});}
+function exportPDF(sid){const s=APP.sessions.find(s=>s.id===sid);if(!s)return;const{jsPDF}=window.jspdf;const doc=new jsPDF();let y=20;doc.setFontSize(16);doc.setFont('helvetica','bold');doc.text(APP.settings.appName,20,y);y+=10;doc.setFontSize(11);doc.text(`Session — ${fd(s.date)}`,20,y);y+=8;doc.setFontSize(9);doc.setFont('helvetica','normal');doc.text(`Blinds: ${s.blinds||'—'} | Rake: ${fmt(s.rake||0)} | Duration: ${s.duration?fmtDur(s.duration):'—'}`,20,y);y+=10;doc.setFont('helvetica','bold');doc.text('Player',20,y);doc.text('In',80,y);doc.text('Stack',120,y);doc.text('P/L',155,y);y+=6;doc.setFont('helvetica','normal');s.entries.forEach(e=>{const p=gp(e.pid),pr=eP(e);doc.text(p?p.name:e.pid,20,y);doc.text(fmt(eTB(e)),80,y);doc.text(fmt(e.stack||0),120,y);doc.text(pr!==null?fmtS(pr):'—',155,y);y+=6;});y+=4;doc.setFont('helvetica','bold');doc.text('Transfers',20,y);y+=6;doc.setFont('helvetica','normal');const bals=s.entries.map(e=>{const p=gp(e.pid);return{name:p?p.name:e.pid,amt:eNS(e)||0};}).filter(b=>Math.abs(b.amt)>0.5);minXfers(bals.map(b=>({...b}))).forEach(t=>{doc.text(`${t.from} pays ${t.to}: ${fmt(t.a)}`,20,y);y+=6;});doc.save(`5B-Session-${s.date}.pdf`);}
+function RPl(){const el=document.getElementById('hvw-players');let players=APP.players.filter(p=>p.on);if(plSearch)players=players.filter(p=>p.name.toLowerCase().includes(plSearch.toLowerCase())||(p.nick||'').toLowerCase().includes(plSearch.toLowerCase()));players=players.sort((a,b)=>{const sa=pStats(a.id),sb=pStats(b.id);if(plSort==='profit')return sb.profit-sa.profit;if(plSort==='wr')return sb.wr-sa.wr;if(plSort==='sessions')return sb.sess-sa.sess;return a.name.localeCompare(b.name);});const inact=APP.players.filter(p=>!p.on);let h=`<div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Players (${APP.players.filter(p=>p.on).length})</div><button class="btn bp bsm" onclick="openNewP()">+ Add</button></div><div class="search-row"><input placeholder="Search..." value="${plSearch}" oninput="plSearch=this.value;RPl()"/><select onchange="plSort=this.value;RPl()"><option value="name" ${plSort==='name'?'selected':''}>Name</option><option value="profit" ${plSort==='profit'?'selected':''}>Profit</option><option value="wr" ${plSort==='wr'?'selected':''}>Win Rate</option><option value="sessions" ${plSort==='sessions'?'selected':''}>Sessions</option></select></div>`;
+if(!players.length)h+=`<div class="empty">No players found</div>`;
+else{h+=`<div class="card" style="padding:0;overflow:hidden">`;players.forEach(p=>{const st=pStats(p.id),b=p.credit,totalIn=APP.sessions.filter(s=>s.status==='closed').reduce((sum,s)=>{const e=(s.entries||[]).find(e=>e.pid===p.id);return e?sum+eTB(e):sum;},0);h+=`<div class="prow" onclick="openPM('${p.id}')"><div class="fb g8" style="flex:1;min-width:0"><div style="cursor:pointer;position:relative" onclick="document.getElementById('pu-${p.id}').click()"><input type="file" id="pu-${p.id}" accept="image/*" style="display:none" onchange="handlePhotoUpload('${p.id}',this)"/>${ava(p)}<div class="photo-edit-btn" style="position:absolute;bottom:0;right:0;width:14px;height:14px;font-size:8px">✎</div></div><div style="margin-left:8px;min-width:0"><div style="font-size:14px">${p.name}${p.isHost?'<span style="font-size:9px;color:var(--t3);margin-left:4px">HOST</span>':''} ${p.nick?`<span style="color:var(--t2);font-size:11px">${p.nick}</span>`:''}</div><div style="font-size:10px;color:var(--t3);margin-top:2px">${st.sess} sessions · WR ${st.wr}% · Lifetime in: ${fmt(totalIn)}</div></div></div><div style="text-align:right;flex:none;margin-left:8px">${b!==0?`<div class="mn ${b<0?'neg':'pos'}" style="font-size:13px">${fmtS(b)}</div><div style="font-size:9px;color:var(--t3)">${b<0?'owes':'owed'}</div>`:`<div style="font-size:11px;color:var(--t3)">Settled</div>`}</div></div>`;});h+=`</div>`;}
+if(inact.length){h+=`<div class="lbl mt20 mb12">Inactive (${inact.length})</div><div class="card" style="padding:0;overflow:hidden">`;inact.forEach(p=>{h+=`<div class="prow" onclick="openPM('${p.id}')" style="opacity:.5"><div class="fb g8">${ava(p)}<div style="font-size:13px;margin-left:8px">${p.name}</div></div><div class="fb g6"><span class="bdg bg-w">Inactive</span><button class="btn bd bxs" onclick="event.stopPropagation();delPlayer('${p.id}')">Delete</button></div></div>`;});h+=`</div>`;}
+el.innerHTML=h;}
+
+function openPM(pid){const p=gp(pid);if(!p)return;const st=pStats(pid);const totalIn=APP.sessions.filter(s=>s.status==='closed').reduce((sum,s)=>{const e=(s.entries||[]).find(e=>e.pid===pid);return e?sum+eTB(e):sum;},0);const bOpts=(APP.badgeTypes||[]).map(b=>`<label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-weight:400"><input type="checkbox" ${(p.badges||[]).includes(b.id)?'checked':''} value="${b.id}" class="badge-cb" style="width:auto"/> ${b.label}</label>`).join('');
+OM(p.name,`<div class="g2 mb8"><div class="stat"><div class="slbl">Sessions</div><div class="sval">${st.sess}</div></div><div class="stat"><div class="slbl">Win Rate</div><div class="sval ${st.wr>=50?'pos':'neg'}">${st.wr}%</div></div><div class="stat"><div class="slbl">Lifetime In</div><div class="sval">${fmt(totalIn)}</div></div><div class="stat"><div class="slbl">Total P/L</div><div class="sval ${st.profit>=0?'pos':'neg'}">${fmtS(st.profit)}</div></div><div class="stat"><div class="slbl">Best Night</div><div class="sval pos">${fmt(st.best)}</div></div><div class="stat"><div class="slbl">Avg P/L</div><div class="sval ${st.ap>=0?'pos':'neg'}">${fmtS(st.ap)}</div></div></div><hr>
+<div style="text-align:center;margin-bottom:14px"><div class="prof-photo" style="margin:0 auto 8px" onclick="document.getElementById('hpu-${pid}').click()"><div class="photo-edit-btn">&#x270E;</div>${p.photo?`<img src="${p.photo}"/>`:`<span>${p.name[0]}</span>`}</div><input type="file" id="hpu-${pid}" accept="image/*" style="display:none" onchange="handlePhotoUpload('${pid}',this)"/></div>
+<div class="fg"><label class="fl">Name</label><input id="ep-n" value="${p.name}"/></div>
+<div class="fg"><label class="fl">Nickname</label><input id="ep-nk" value="${p.nick||''}" placeholder="Optional..."/></div>
+<div class="fg"><label class="fl">Bio</label><input id="ep-bio" value="${p.bio||''}" placeholder="One liner..."/></div>
+<div class="fg"><label class="fl">Credit (negative = owes house)</label><input id="ep-c" type="number" value="${p.credit}" step="1" inputmode="numeric" min="-99999"/></div>
+<div class="fg"><label class="fl">Notes</label><input id="ep-no" value="${p.notes||''}" placeholder="..."/></div>
+<div class="fg"><label class="fl">Member Since</label><input id="ep-since" type="date" value="${p.since||''}"/></div>
+${bOpts?`<div class="fg"><label class="fl">Badges</label>${bOpts}</div>`:''}
+<div class="fg"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="ep-a" ${p.on?'checked':''} style="width:14px;height:14px;cursor:pointer;flex:none"/> Active Player</label></div>
+<button class="btn bs bsm" onclick="resetPPin('${pid}')">Reset Player PIN</button>`,
+`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveP('${pid}')">Save</button>`);}
+
+async function saveP(pid){const p=gp(pid);if(!p)return;p.name=document.getElementById('ep-n').value.trim()||p.name;p.nick=document.getElementById('ep-nk').value;p.bio=document.getElementById('ep-bio').value;p.credit=parseFloat(document.getElementById('ep-c').value)||0;p.notes=document.getElementById('ep-no').value;p.since=document.getElementById('ep-since').value;p.on=document.getElementById('ep-a').checked;const cbs=document.querySelectorAll('.badge-cb');if(cbs.length)p.badges=Array.from(cbs).filter(c=>c.checked).map(c=>c.value);await save();CM();RPl();toast('Saved');}
+function resetPPin(pid){confirm2("Reset this player's PIN?",async()=>{const p=gp(pid);if(p){p.playerPin='';await save();toast('PIN reset');}});}
+function openNewP(){OM('New Player',`<div class="fg"><label class="fl">Name</label><input id="np-n" placeholder="Name..."/></div><div class="fg"><label class="fl">Nickname</label><input id="np-nk" placeholder="Optional..."/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="addNewP()">Add</button>`);}
+async function addNewP(){const name=document.getElementById('np-n').value.trim();if(!name)return;const num=String(APP.players.length+1).padStart(3,'0');APP.players.push({id:`P${num}`,name,nick:document.getElementById('np-nk').value,bio:'',photo:'',isHost:false,credit:0,notes:'',on:true,since:td(),badges:[],playerPin:'',lastRecap:null});await save();CM();RPl();toast(`${name} added`);}
+function delPlayer(pid){confirm2('Permanently delete?',async()=>{APP.players=APP.players.filter(p=>p.id!==pid);await save();RPl();toast('Deleted');});}
+async function handlePhotoUpload(pid,input){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=async ev=>{const p=gp(pid);if(p)p.photo=ev.target.result;await save();CM();RPl();toast('Photo updated');};r.readAsDataURL(file);}
+
+function RHist(){const el=document.getElementById('hvw-history');const cl=[...APP.sessions].filter(s=>s.status==='closed').sort((a,b)=>b.date.localeCompare(a.date));let h=`<div class="lbl mb16">History (${cl.length})</div>`;if(!cl.length)h+=`<div class="empty">No sessions yet</div>`;else cl.forEach(s=>{const pot=(s.entries||[]).reduce((sum,e)=>sum+eTB(e),0),rph=s.duration&&s.rake?Math.round(s.rake/(s.duration/60)):0;h+=`<div class="card" style="cursor:pointer" onclick="viewS('${s.id}')"><div class="fbb"><div><div style="font-size:15px;margin-bottom:3px">${fd(s.date)}</div><div style="font-size:11px;color:var(--t2)">${s.blinds||'—'} · ${(s.entries||[]).length} players · ${fmt(pot)} pot</div>${s.duration?`<div style="font-size:10px;color:var(--t3);margin-top:2px">${fmtDur(s.duration)} · ${C()}${rph}/hr</div>`:''}</div><div style="text-align:right;flex:none"><div style="font-size:10px;color:var(--t3)">Rake</div><div class="pos mn">${fmt(s.rake||0)}</div></div></div>${s.notes?`<div style="margin-top:7px;font-size:11px;color:var(--t3)">${s.notes}</div>`:''}</div>`;});el.innerHTML=h;}
+
+function RBook(){
+  const el=document.getElementById('hvw-bookings'),up=APP.upcoming;
+  let h=`<div class="fbb mb16"><div class="lbl" style="margin-bottom:0">Upcoming Game</div>${up?`<div class="fb g8"><button class="btn bs bsm" onclick="openEditBk()">Edit</button><button class="btn bd bsm" onclick="clearBk()">Clear</button></div>`:`<button class="btn bp bsm" onclick="openNewBk()">Post Game</button>`}</div>`;
+  if(!up){h+=`<div class="empty">No game posted</div>`;el.innerHTML=h;return;}
+  const conf=up.confirmed||[],inter=up.interested||[],wl=up.waitlist||[];
+  let countdown='';
+  if(up.date&&up.time){const d=new Date(`${up.date}T${up.time}`),diff=d-Date.now(),days=Math.floor(diff/864e5),hrs=Math.floor((diff%864e5)/3600000);if(diff>0)countdown=`<div style="font-size:12px;color:var(--a);margin-top:5px">${days>0?`${days}d `:''} ${hrs}h away</div>`;}
+  h+=`<div class="card mb12"><div style="font-size:17px;margin-bottom:8px">${up.title||'Next Game'}</div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:3px">${fd(up.date)}${up.time?` · ${up.time}`:''}</div>
+    ${up.location?`<div style="font-size:13px;color:var(--t2);margin-bottom:3px">${up.location}</div>`:''}
+    ${up.blinds?`<div style="font-size:13px;color:var(--t2);margin-bottom:3px">Blinds: ${up.blinds}</div>`:''}
+    <div style="font-size:13px;color:var(--t2)">${conf.length} confirmed · ${inter.length} interested · Max ${up.maxPlayers||'?'}</div>
+    ${countdown}
+    ${up.notes?`<div style="font-size:12px;color:var(--t3);font-weight:400;line-height:1.4;margin-top:8px">${up.notes}</div>`:''}
+    <button class="btn bs bsm mt12" onclick="copyCap()">Copy Caption</button>
+  </div>`;
+
+  h+=`<div class="fbb mb8"><div class="lbl" style="margin-bottom:0">Confirmed (${conf.length})</div><button class="btn bs bsm" onclick="openAddBk('confirmed')">+ Add</button></div>`;
+  if(!conf.length)h+=`<div class="csm" style="font-size:12px;color:var(--t3)">None yet</div>`;
+  else{h+=`<div class="card" style="padding:0;overflow:hidden">`;conf.forEach(e=>{const pid=e.pid||e,p=gp(pid),lt=e.leaveTime||'';h+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--b)"><div class="fb g8">${ava(p,28)}<div><div style="font-size:13px">${p?p.name:pid}</div>${lt?`<div style="font-size:10px;color:var(--a)">Leaving ${lt}</div>`:''}</div></div><div class="fb g6"><select style="width:110px;font-size:11px;padding:4px 6px" onchange="changeBkStatus('${pid}',this.value)"><option value="confirmed" selected>Confirmed</option><option value="interested">Interested</option><option value="waitlist">Waitlist</option></select><button class="btn bd bxs" onclick="removeBk('${pid}')">&#x2715;</button></div></div>`;});h+=`</div>`;}
+
+  h+=`<div class="fbb mt16 mb8"><div class="lbl" style="margin-bottom:0">Interested (${inter.length})</div><button class="btn bs bsm" onclick="openAddBk('interested')">+ Add</button></div>`;
+  if(!inter.length)h+=`<div class="csm" style="font-size:12px;color:var(--t3)">None yet</div>`;
+  else{h+=`<div class="card" style="padding:0;overflow:hidden">`;inter.forEach(e=>{const pid=e.pid||e,p=gp(pid),lt=e.leaveTime||'';h+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--b)"><div class="fb g8">${ava(p,28)}<div><div style="font-size:13px">${p?p.name:pid}</div>${lt?`<div style="font-size:10px;color:var(--a)">Leaving ${lt}</div>`:''}<span class="${e.standby?'standby-tag':'maybe-tag'}" style="margin-top:3px;display:inline-block">${e.standby?'On Standby':'Maybe'}</span></div></div><div class="fb g6"><select style="width:110px;font-size:11px;padding:4px 6px" onchange="changeBkStatus('${pid}',this.value)"><option value="confirmed">Confirmed</option><option value="interested" selected>Interested</option><option value="waitlist">Waitlist</option></select><button class="btn bd bxs" onclick="removeBk('${pid}')">&#x2715;</button></div></div>`;});h+=`</div>`;}
+
+  h+=`<div class="fbb mt16 mb8"><div class="lbl" style="margin-bottom:0">Waitlist (${wl.length})</div><button class="btn bs bsm" onclick="openAddBk('waitlist')">+ Add</button></div>`;
+  if(!wl.length)h+=`<div class="csm" style="font-size:12px;color:var(--t3)">Waitlist empty</div>`;
+  else{h+=`<div class="card" style="padding:0;overflow:hidden">`;wl.forEach((e,i)=>{const pid=e.pid||e,p=gp(pid);const msg=`${p?p.name:'Player'} — spot available${e.callupTime?` from ${e.callupTime}`:''} at ${up.location||'the game'}. Confirm: ${APP.settings.appLink||'[link]'}`;h+=`<div class="wl-item"><div class="wl-num">${i+1}</div>${ava(p,28)}<div style="flex:1;min-width:0;margin-left:6px"><div style="font-size:13px">${p?p.name:pid}</div><span class="${e.standby?'standby-tag':'maybe-tag'}" style="margin-top:3px;display:inline-block">${e.standby?'On Standby':'Maybe'}</span>${e.callupTime?`<div style="font-size:10px;color:var(--g);margin-top:2px">Called up from ${e.callupTime}</div>`:''}</div><div class="fb g6" style="flex:none">${i>0?`<button class="btn bs bxs" onclick="moveWl('${pid}',-1)">&#x2191;</button>`:''} ${i<wl.length-1?`<button class="btn bs bxs" onclick="moveWl('${pid}',1)">&#x2193;</button>`:''} <button class="btn bp bxs" onclick="confirmWl('${pid}')">Confirm</button><button class="btn bs bxs" onclick="copyMsg('${encodeURIComponent(msg)}')">Copy msg</button><button class="btn bd bxs" onclick="removeBk('${pid}')">&#x2715;</button></div></div>`;});h+=`</div>`;}
+
+  const cl=[...APP.sessions].filter(s=>s.status==='closed').sort((a,b)=>a.date.localeCompare(b.date));
+  if(cl.length>1){const gaps=[];for(let i=1;i<cl.length;i++){const a=new Date(cl[i-1].date),b=new Date(cl[i].date);gaps.push(Math.round((b-a)/864e5));}const avgGap=Math.round(gaps.reduce((s,g)=>s+g,0)/gaps.length);h+=`<div class="lbl mt20 mb8">Frequency</div><div class="g2"><div class="stat"><div class="slbl">Avg Gap</div><div class="sval">${avgGap} days</div></div><div class="stat"><div class="slbl">Total Sessions</div><div class="sval">${cl.length}</div></div></div>`;}
+  el.innerHTML=h;
+}
+
+function copyMsg(enc){const msg=decodeURIComponent(enc);navigator.clipboard.writeText(msg).then(()=>toast('Message copied')).catch(()=>toast('Could not copy'));}
+function copyCap(){const up=APP.upcoming;if(!up)return;const lines=[APP.settings.appName,`${fd(up.date)}${up.time?` — ${up.time}`:''}`,up.location?`Location: ${up.location}`:'',up.blinds?`Blinds: ${up.blinds}`:'',up.notes||'',``,`Confirm in the app: ${APP.settings.appLink||'[add link in Settings]'}`].filter(l=>l!==undefined&&l!=='');navigator.clipboard.writeText(lines.join('\n')).then(()=>toast('Caption copied')).catch(()=>toast('Could not copy'));}
+function openNewBk(){OM('Post Game',`<div class="fg"><label class="fl">Title</label><input id="bk-t" placeholder="Friday Night Poker..."/></div><div class="fg"><label class="fl">Date</label><input id="bk-d" type="date" value="${td()}"/></div><div class="fg"><label class="fl">Time</label><input id="bk-tm" type="time"/></div><div class="fg"><label class="fl">Location</label><input id="bk-loc" placeholder="Address..."/></div><div class="fg"><label class="fl">Blinds</label><input id="bk-bl" placeholder="1/1"/></div><div class="fg"><label class="fl">Max Players</label><input id="bk-max" type="number" value="10" min="1" inputmode="numeric"/></div><div class="fg"><label class="fl">Notes</label><textarea id="bk-n" placeholder="Bring cash..."></textarea></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveBk()">Post</button>`);}
+async function saveBk(){APP.upcoming={title:document.getElementById('bk-t').value,date:document.getElementById('bk-d').value,time:document.getElementById('bk-tm').value,location:document.getElementById('bk-loc').value,blinds:document.getElementById('bk-bl').value,maxPlayers:parseInt(document.getElementById('bk-max').value)||10,notes:document.getElementById('bk-n').value,confirmed:[],interested:[],waitlist:[]};await save();CM();RBook();toast('Game posted');}
+function openEditBk(){const u=APP.upcoming;OM('Edit Game',`<div class="fg"><label class="fl">Title</label><input id="bk-t" value="${u.title||''}"/></div><div class="fg"><label class="fl">Date</label><input id="bk-d" type="date" value="${u.date||''}"/></div><div class="fg"><label class="fl">Time</label><input id="bk-tm" type="time" value="${u.time||''}"/></div><div class="fg"><label class="fl">Location</label><input id="bk-loc" value="${u.location||''}"/></div><div class="fg"><label class="fl">Blinds</label><input id="bk-bl" value="${u.blinds||''}"/></div><div class="fg"><label class="fl">Max Players</label><input id="bk-max" type="number" value="${u.maxPlayers||10}"/></div><div class="fg"><label class="fl">Notes</label><textarea id="bk-n">${u.notes||''}</textarea></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="updateBk()">Save</button>`);}
+async function updateBk(){const u=APP.upcoming;u.title=document.getElementById('bk-t').value;u.date=document.getElementById('bk-d').value;u.time=document.getElementById('bk-tm').value;u.location=document.getElementById('bk-loc').value;u.blinds=document.getElementById('bk-bl').value;u.maxPlayers=parseInt(document.getElementById('bk-max').value)||10;u.notes=document.getElementById('bk-n').value;await save();CM();RBook();toast('Updated');}
+function clearBk(){confirm2('Clear the upcoming game?',async()=>{APP.upcoming=null;await save();RBook();toast('Cleared');});}
+function openAddBk(status){const up=APP.upcoming,taken=new Set([...(up.confirmed||[]).map(e=>e.pid||e),...(up.interested||[]).map(e=>e.pid||e),...(up.waitlist||[]).map(e=>e.pid||e)]);const avail=APP.players.filter(p=>p.on&&!taken.has(p.id)).sort((a,b)=>a.name.localeCompare(b.name));if(!avail.length){toast('All players listed');return;}const lbl=status==='confirmed'?'Confirmed':status==='interested'?'Interested':'Waitlist';OM(`Add to ${lbl}`,`<div class="fg"><label class="fl">Player</label><select id="abk-p">${avail.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}</select></div><div class="fg"><label class="fl">Leaving at (optional)</label><input id="abk-lt" type="time"/></div>${status!=='confirmed'?`<div class="fg"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:400"><input type="checkbox" id="abk-sb" style="width:auto"/> On Standby — will come if called</label></div>`:''}`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="doAddBk('${status}')">Add</button>`);}
+async function doAddBk(status){const pid=document.getElementById('abk-p').value,lt=document.getElementById('abk-lt').value,sb=document.getElementById('abk-sb')?document.getElementById('abk-sb').checked:false;if(!APP.upcoming[status])APP.upcoming[status]=[];APP.upcoming[status].push({pid,leaveTime:lt,standby:sb});await save();CM();RBook();}
+async function changeBkStatus(pid,newStatus){const up=APP.upcoming;if(!up)return;let entry=null;['confirmed','interested','waitlist'].forEach(s=>{const idx=(up[s]||[]).findIndex(e=>(e.pid||e)===pid);if(idx>=0){entry=up[s][idx];up[s].splice(idx,1);}});if(!up[newStatus])up[newStatus]=[];up[newStatus].push(entry||{pid,leaveTime:'',standby:false});await save();RBook();}
+async function removeBk(pid){const up=APP.upcoming;if(!up)return;['confirmed','interested','waitlist'].forEach(s=>{if(up[s])up[s]=(up[s]||[]).filter(e=>(e.pid||e)!==pid);});await save();RBook();}
+async function moveWl(pid,dir){const wl=APP.upcoming.waitlist||[];const i=wl.findIndex(e=>(e.pid||e)===pid);if(i<0)return;const ni=i+dir;if(ni<0||ni>=wl.length)return;[wl[i],wl[ni]]=[wl[ni],wl[i]];await save();RBook();}
+async function confirmWl(pid){const up=APP.upcoming;if(!up)return;if((up.confirmed||[]).length>=(up.maxPlayers||10)){toast('Session full');return;}const idx=(up.waitlist||[]).findIndex(e=>(e.pid||e)===pid);if(idx<0)return;const entry=up.waitlist[idx];up.waitlist.splice(idx,1);if(!up.confirmed)up.confirmed=[];up.confirmed.push(entry);await save();RBook();toast('Moved to confirmed');}
+function RSett(){document.getElementById('hvw-settings').innerHTML=`<div class="lbl mb16">Settings</div>
+<div class="card mb8"><div class="fg"><label class="fl">App Name</label><input id="s-n" value="${APP.settings.appName}"/></div><div class="fg"><label class="fl">Currency</label><input id="s-c" value="${APP.settings.currency||'£'}" style="max-width:80px"/></div><div class="fg"><label class="fl">App Link (for captions)</label><input id="s-lk" value="${APP.settings.appLink||''}" placeholder="https://5bhomegames.netlify.app"/></div><button class="btn bp bsm" onclick="saveSett()">Save</button></div>
+<div class="card mb8"><div style="font-size:12px;color:var(--t2);margin-bottom:12px">Change PINs</div><div class="fb g8"><button class="btn bs bsm" onclick="chPin('ch-host')">Host PIN</button><button class="btn bs bsm" onclick="chPin('ch-player')">Player PIN</button></div></div>
+<div class="card mb8"><div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Announcements</div><button class="btn bp bsm" onclick="openNewAnn()">+ Add</button></div>${(APP.announcements||[]).length?APP.announcements.map(a=>`<div class="ann-card"><div class="fbb"><div style="font-size:13px;font-weight:400">${a.text}</div><button class="bgh bxs btn" onclick="delAnn('${a.id}')">&#x2715;</button></div><div style="font-size:10px;color:var(--t3);margin-top:5px">${fd(a.date)}</div></div>`).join(''):'<div class="empty" style="padding:12px 0">None</div>'}</div>
+<div class="card mb8"><div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Rewards</div><button class="btn bp bsm" onclick="openNewReward()">+ Add</button></div>${(APP.rewards||[]).length?APP.rewards.map(r=>`<div class="ann-card"><div class="fbb"><div><div style="font-size:13px">${r.title}</div>${r.desc?`<div style="font-size:11px;color:var(--t2);margin-top:2px;font-weight:400">${r.desc}</div>`:''}</div><button class="bgh bxs btn" onclick="delReward('${r.id}')">&#x2715;</button></div></div>`).join(''):'<div class="empty" style="padding:12px 0">None</div>'}</div>
+<div class="card mb8"><div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Wall of Fame</div><button class="btn bp bsm" onclick="openNewWOF()">+ Add</button></div>${(APP.wallOfFame||[]).length?APP.wallOfFame.map(w=>`<div class="ann-card"><div class="fbb"><div style="font-size:13px;font-weight:400">${w.text}</div><button class="bgh bxs btn" onclick="delWOF('${w.id}')">&#x2715;</button></div><div style="font-size:10px;color:var(--t3);margin-top:5px">${fd(w.date)}</div></div>`).join(''):'<div class="empty" style="padding:12px 0">None</div>'}</div>
+<div class="card mb8"><div class="fbb mb12"><div class="lbl" style="margin-bottom:0">Badge Types</div><button class="btn bp bsm" onclick="openNewBadge()">+ Add</button></div>${(APP.badgeTypes||[]).length?APP.badgeTypes.map(b=>`<div class="ann-card"><div class="fbb"><div style="font-size:13px">${b.label}</div><button class="bgh bxs btn" onclick="delBadge('${b.id}')">&#x2715;</button></div></div>`).join(''):'<div class="empty" style="padding:12px 0">Add badge types to award to players</div>'}</div>
+<div class="card mb8"><div style="font-size:12px;color:var(--t2);margin-bottom:12px">Reset all credit balances to zero</div><button class="btn bd bsm" onclick="resetBals()">Reset All Balances</button></div>
+<div class="card"><div style="font-size:12px;color:var(--t2);margin-bottom:12px">Delete all session history</div><button class="btn bd bsm" onclick="clearHist()">Clear History</button></div>`;}
+
+async function saveSett(){APP.settings.appName=document.getElementById('s-n').value.trim()||APP.settings.appName;APP.settings.currency=document.getElementById('s-c').value||'£';APP.settings.appLink=document.getElementById('s-lk').value;document.getElementById('hbrand').textContent=APP.settings.appName;await save();toast('Settings saved');}
+function chPin(ctx){pinCtx=ctx;startPinSet(ctx==='ch-host'?'New host PIN':'New player PIN','');}
+function openNewAnn(){OM('New Announcement',`<div class="fg"><label class="fl">Message</label><textarea id="ann-t" placeholder="Game this Friday..."></textarea></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveAnn()">Post</button>`);}
+async function saveAnn(){const text=document.getElementById('ann-t').value.trim();if(!text)return;if(!APP.announcements)APP.announcements=[];APP.announcements.unshift({id:uid(),text,date:td()});await save();CM();RSett();toast('Posted');}
+async function delAnn(id){APP.announcements=APP.announcements.filter(a=>a.id!==id);await save();RSett();}
+function openNewReward(){OM('Add Reward',`<div class="fg"><label class="fl">Title</label><input id="rw-t" placeholder="1st Place Prize..."/></div><div class="fg"><label class="fl">Description</label><input id="rw-d" placeholder="AirPods, cash..."/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveReward()">Add</button>`);}
+async function saveReward(){const title=document.getElementById('rw-t').value.trim();if(!title)return;if(!APP.rewards)APP.rewards=[];APP.rewards.push({id:uid(),title,desc:document.getElementById('rw-d').value});await save();CM();RSett();toast('Added');}
+async function delReward(id){APP.rewards=APP.rewards.filter(r=>r.id!==id);await save();RSett();}
+function openNewWOF(){OM('Wall of Fame Entry',`<div class="fg"><label class="fl">Message</label><input id="wf-t" placeholder="Jonathon won 815 in one night..."/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveWOF()">Add</button>`);}
+async function saveWOF(){const text=document.getElementById('wf-t').value.trim();if(!text)return;if(!APP.wallOfFame)APP.wallOfFame=[];APP.wallOfFame.unshift({id:uid(),text,date:td()});await save();CM();RSett();toast('Added');}
+async function delWOF(id){APP.wallOfFame=APP.wallOfFame.filter(w=>w.id!==id);await save();RSett();}
+function openNewBadge(){OM('New Badge Type',`<div class="fg"><label class="fl">Label</label><input id="bg-l" placeholder="First Win, High Roller..."/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveBadge()">Add</button>`);}
+async function saveBadge(){const label=document.getElementById('bg-l').value.trim();if(!label)return;if(!APP.badgeTypes)APP.badgeTypes=[];APP.badgeTypes.push({id:uid(),label});await save();CM();RSett();toast('Badge type added');}
+async function delBadge(id){APP.badgeTypes=APP.badgeTypes.filter(b=>b.id!==id);await save();RSett();}
+function resetBals(){confirm2('Reset all balances to zero?',async()=>{APP.players.forEach(p=>p.credit=0);await save();toast('Reset');});}
+function clearHist(){confirm2('Delete all session history?',async()=>{APP.sessions=APP.sessions.filter(s=>s.status==='open');await save();RHist();toast('Cleared');});}
+
+function RPHome(){const el=document.getElementById('pvw-home'),p=gp(myPid);if(!p){el.innerHTML=`<div class="empty">Profile not found</div>`;return;}const st=pStats(myPid);const badges=(p.badges||[]).map(bid=>{const b=(APP.badgeTypes||[]).find(b=>b.id===bid);return b?`<span class="badge-pill">${b.label}</span>`:''}).filter(Boolean).join(' ');const streak=st.streak>1?(st.lastR==='W'?`${st.streak} win streak`:`${st.streak} loss streak`):'';
+let h=`<div class="prof-hero"><div class="prof-photo" onclick="document.getElementById('self-photo').click()">${p.photo?`<img src="${p.photo}"/>`:`<span>${p.name[0]}</span>`}<div class="photo-edit-btn">&#x270E;</div></div><input type="file" id="self-photo" accept="image/*" style="display:none" onchange="selfPhoto(this)"/>
+<div style="font-size:20px;margin-bottom:3px">${p.name}</div>
+${p.nick?`<div style="font-size:13px;color:var(--t2);margin-bottom:3px">${p.nick}</div>`:''}
+${p.bio?`<div style="font-size:12px;color:var(--t3);font-weight:400;line-height:1.4;margin-bottom:6px">${p.bio}</div>`:''}
+${streak?`<div style="font-size:12px;color:${st.lastR==='W'?'var(--g)':'var(--r)'};margin-bottom:6px">${streak}</div>`:''}
+<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.1em">Member since ${fd(p.since||'2026-03-02')}</div>
+${badges?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;justify-content:center">${badges}</div>`:''}
+<button class="btn bs bsm mt12" onclick="editMyProfile()">Edit Profile</button></div>`;
+if(p.lastRecap){const isWin=p.lastRecap.profit>=0;h+=`<div class="recap-card ${isWin?'':'loss'}"><div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:4px">Last Session — ${fd(p.lastRecap.date)}</div><div style="font-size:18px" class="${isWin?'pos':'neg'}">${fmtS(p.lastRecap.profit)}</div><button class="btn bs bxs mt8" onclick="dismissRecap()">Dismiss</button></div>`;}
+h+=`<div class="g3 mb8 mt4"><div class="smini"><div class="smini-v">${st.sess}</div><div class="smini-l">Sessions</div></div><div class="smini"><div class="smini-v ${st.wr>=50?'pos':'neg'}">${st.wr}%</div><div class="smini-l">Win Rate</div></div><div class="smini"><div class="smini-v ${st.profit>=0?'pos':'neg'}">${fmtS(st.profit)}</div><div class="smini-l">Total P/L</div></div></div>`;
+if((APP.wallOfFame||[]).length){h+=`<div class="lbl mt16 mb10">Wall of Fame</div>`;APP.wallOfFame.slice(0,3).forEach(w=>{h+=`<div class="ann-card"><div style="font-size:13px;font-weight:400">${w.text}</div><div style="font-size:10px;color:var(--t3);margin-top:5px">${fd(w.date)}</div></div>`;});}
+el.innerHTML=h;}
+async function dismissRecap(){const p=gp(myPid);if(p){p.lastRecap=null;await save();RPHome();}}
+function editMyProfile(){const p=gp(myPid);if(!p)return;OM('Edit Profile',`<div class="fg"><label class="fl">Nickname</label><input id="ep-nk" value="${p.nick||''}" placeholder="Optional..."/></div><div class="fg"><label class="fl">Bio</label><input id="ep-bio" value="${p.bio||''}" placeholder="One liner..."/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveMyP()">Save</button>`);}
+async function saveMyP(){const p=gp(myPid);if(!p)return;p.nick=document.getElementById('ep-nk').value;p.bio=document.getElementById('ep-bio').value;await save();CM();RPHome();toast('Saved');}
+async function selfPhoto(input){const file=input.files[0];if(!file)return;if(useFB&&stor){try{const ref=stor.ref().child(`players/${myPid}/photo`);await ref.put(file);const url=await ref.getDownloadURL();const p=gp(myPid);if(p)p.photo=url;await save();RPHome();toast('Photo updated');}catch(e){toast('Upload failed');}}else{const r=new FileReader();r.onload=async ev=>{const p=gp(myPid);if(p)p.photo=ev.target.result;await save();RPHome();toast('Photo updated');};r.readAsDataURL(file);}}
+
+function RPNext(){
+  const el=document.getElementById('pvw-nextgame'),up=APP.upcoming;
+  const aS=APP.sessions.find(s=>s.status==='open');
+  let h='';
+  if(aS){const pot=(aS.entries||[]).reduce((s,e)=>s+eTB(e),0),cnt=(aS.entries||[]).length,elapsed=aS.startTime?Math.floor((Date.now()-new Date(aS.startTime).getTime())/60000):0;h+=`<div class="live-banner"><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--g);margin-bottom:4px">Game is Live</div><div style="font-size:15px">${cnt} players · ${fmt(pot)} in the pot</div><div style="font-size:11px;color:var(--t2);margin-top:3px">Running for ${fmtDur(elapsed)}</div></div>`;}
+  if(!up){h+=`<div class="empty">No game posted yet</div><div style="font-size:12px;color:var(--t3);text-align:center;margin-top:8px">Check back soon</div>`;el.innerHTML=h;return;}
+  const conf=up.confirmed||[],inter=up.interested||[],wl=up.waitlist||[];
+  const myStatus=myBkStatus(),myEntry=myBkEntry(),myWlPos=wl.findIndex(e=>(e.pid||e)===myPid)+1;
+  let countdown='';if(up.date&&up.time){const d=new Date(`${up.date}T${up.time}`),diff=d-Date.now(),days=Math.floor(diff/864e5),hrs=Math.floor((diff%864e5)/3600000);if(diff>0)countdown=`<div style="font-size:13px;color:var(--a);margin-top:6px">${days>0?`${days}d `:''} ${hrs}h away</div>`;}
+  h+=`<div class="card mb16"><div style="font-size:18px;margin-bottom:8px">${up.title||'Next Game'}</div><div style="font-size:14px;color:var(--t2);margin-bottom:3px">${fd(up.date)}${up.time?` · ${up.time}`:''}</div>${up.location?`<div style="font-size:14px;color:var(--t2);margin-bottom:3px">${up.location}</div>`:''} ${up.blinds?`<div style="font-size:13px;color:var(--t2);margin-bottom:3px">Blinds: ${up.blinds}</div>`:''}<div style="font-size:13px;color:var(--t2)">${conf.length}/${up.maxPlayers||'?'} confirmed · ${inter.length} interested</div>${countdown}${up.notes?`<div style="font-size:12px;color:var(--t3);margin-top:10px;font-weight:400;line-height:1.5">${up.notes}</div>`:''}</div>`;
+  if(!myStatus||myStatus==='waitlist'){h+=`<div style="font-size:13px;color:var(--t2);margin-bottom:10px;text-align:center">Are you coming?</div><div class="rsvp-wrap"><div class="rsvp-btn r-yes ${myStatus==='confirmed'?'sel':''}" onclick="rsvp('confirmed')">Yes</div><div class="rsvp-btn r-maybe ${myStatus==='interested'?'sel':''}" onclick="openRsvpMaybe()">Maybe</div><div class="rsvp-btn r-no" onclick="rsvp('no')">No</div></div>`;if(myStatus==='waitlist')h+=`<div style="text-align:center;font-size:13px;color:var(--a);margin-bottom:16px">You are number ${myWlPos} on the waitlist</div>`;}
+  else if(myStatus==='confirmed'){h+=`<div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:var(--rr2);padding:14px;text-align:center;margin-bottom:16px"><div style="font-size:15px;color:var(--g);margin-bottom:4px">You are in</div>${myEntry&&myEntry.leaveTime?`<div style="font-size:12px;color:var(--t2)">Leaving at ${myEntry.leaveTime}</div>`:''}<div class="fb g8" style="justify-content:center;margin-top:10px"><button class="btn bs bsm" onclick="openChLeave()">Set leave time</button><button class="btn bd bsm" onclick="rsvp('cancel')">Cancel spot</button></div></div>`;}
+  else if(myStatus==='interested'){h+=`<div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:var(--rr2);padding:14px;text-align:center;margin-bottom:16px"><div style="font-size:15px;color:var(--a);margin-bottom:4px">You are interested</div>${myEntry&&myEntry.standby?`<div style="font-size:12px;color:var(--t2)">On Standby</div>`:''}<div class="fb g8" style="justify-content:center;margin-top:10px"><button class="btn bp bsm" onclick="rsvp('confirmed')">Confirm Yes</button><button class="btn bd bsm" onclick="rsvp('cancel')">Remove</button></div></div>`;}
+  if(conf.length){h+=`<div class="lbl mb10">Coming (${conf.length})</div><div class="avatar-row mb16">`;conf.forEach(e=>{const pid=e.pid||e,p=gp(pid);if(p)h+=avaSm(p);});h+=`</div>`;}
+  if(inter.length){h+=`<div class="lbl mb10">Interested (${inter.length})</div><div class="avatar-row">`;inter.forEach(e=>{const pid=e.pid||e,p=gp(pid);if(p)h+=avaSm(p);});h+=`</div>`;}
+  el.innerHTML=h;
+}
+async function rsvp(status){if(!APP.upcoming||!myPid)return;const up=APP.upcoming;['confirmed','interested','waitlist'].forEach(s=>{if(up[s])up[s]=(up[s]||[]).filter(e=>(e.pid||e)!==myPid);});if(status==='confirmed'){const isFull=(up.confirmed||[]).length>=(up.maxPlayers||10);if(isFull){if(!up.waitlist)up.waitlist=[];up.waitlist.push({pid:myPid,leaveTime:'',standby:false});toast('Session full — added to waitlist');}else{if(!up.confirmed)up.confirmed=[];up.confirmed.push({pid:myPid,leaveTime:'',standby:false});}}else if(status==='interested'){if(!up.interested)up.interested=[];up.interested.push({pid:myPid,leaveTime:'',standby:false});}await save();RPNext();}
+function openRsvpMaybe(){OM('Interested',`<div style="font-size:13px;color:var(--t2);margin-bottom:16px">Let the host know your availability</div><div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400"><input type="checkbox" id="rm-sb" style="width:auto"/> I am on standby — I will come if called up</label></div><div class="fg"><label class="fl">Leaving at (optional)</label><input id="rm-lt" type="time" placeholder="e.g. 01:00"/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" style="background:var(--a);color:#000" onclick="rsvpMaybe()">Mark Interested</button>`);}
+async function rsvpMaybe(){if(!APP.upcoming||!myPid)return;const up=APP.upcoming,sb=document.getElementById('rm-sb').checked,lt=document.getElementById('rm-lt').value;['confirmed','interested','waitlist'].forEach(s=>{if(up[s])up[s]=(up[s]||[]).filter(e=>(e.pid||e)!==myPid);});if(!up.interested)up.interested=[];up.interested.push({pid:myPid,leaveTime:lt,standby:sb});await save();CM();RPNext();}
+function openChLeave(){OM('Set Leave Time',`<div class="fg"><label class="fl">Leaving at</label><input id="cl-lt" type="time" value="${myBkEntry()?.leaveTime||''}"/></div>`,`<button class="btn bs" onclick="CM()">Cancel</button><button class="btn bp" onclick="saveLeave()">Save</button>`);}
+async function saveLeave(){if(!APP.upcoming||!myPid)return;const lt=document.getElementById('cl-lt').value;['confirmed','interested'].forEach(s=>{const e=(APP.upcoming[s]||[]).find(e=>(e.pid||e)===myPid);if(e&&e.pid)e.leaveTime=lt;});await save();CM();RPNext();}
+
+function RPStats(){const el=document.getElementById('pvw-stats'),p=gp(myPid);if(!p){el.innerHTML=`<div class="empty">No data</div>`;return;}const st=pStats(myPid);const recent=APP.sessions.filter(s=>s.status==='closed'&&(s.entries||[]).find(e=>e.pid===myPid)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);let h=`<div class="lbl mb16">My Stats</div><div class="g2 mb8"><div class="stat"><div class="slbl">Sessions</div><div class="sval">${st.sess}</div></div><div class="stat"><div class="slbl">Win Rate</div><div class="sval ${st.wr>=50?'pos':'neg'}">${st.wr}%</div></div><div class="stat"><div class="slbl">Total P/L</div><div class="sval ${st.profit>=0?'pos':'neg'}">${fmtS(st.profit)}</div></div><div class="stat"><div class="slbl">Avg P/L</div><div class="sval ${st.ap>=0?'pos':'neg'}">${fmtS(st.ap)}</div></div><div class="stat"><div class="slbl">Avg Buy-in</div><div class="sval">${fmt(st.ab)}</div></div><div class="stat"><div class="slbl">Best Night</div><div class="sval pos">${fmt(st.best)}</div></div></div>`;if(st.streak>1)h+=`<div class="card mb8" style="text-align:center;border-color:${st.lastR==='W'?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'}"><div style="font-size:15px;color:${st.lastR==='W'?'var(--g)':'var(--r)'}">${st.streak} ${st.lastR==='W'?'win':'loss'} streak</div></div>`;if(recent.length){h+=`<div class="lbl mt16 mb12">Session History</div>`;recent.forEach(s=>{const e=(s.entries||[]).find(e=>e.pid===myPid);if(!e)return;const pr=eP(e);h+=`<div class="csm fbb"><div><div style="font-size:13px">${fd(s.date)} · ${s.blinds||'—'}</div><div style="font-size:11px;color:var(--t3);margin-top:2px">Bought in: ${fmt(eTB(e))}</div></div><div class="mn ${pr>=0?'pos':'neg'}" style="font-size:15px">${fmtS(pr||0)}</div></div>`;});}el.innerHTML=h;}
+
+function RPNews(){const el=document.getElementById('pvw-news'),anns=APP.announcements||[];let h=`<div class="lbl mb16">Announcements</div>`;if(!anns.length)h+=`<div class="empty">Nothing posted yet</div>`;else anns.forEach(a=>{h+=`<div class="ann-card"><div style="font-size:13px;font-weight:400;line-height:1.4">${a.text}</div><div style="font-size:10px;color:var(--t3);margin-top:7px;letter-spacing:.08em;text-transform:uppercase">${fd(a.date)}</div></div>`;});el.innerHTML=h;}
+
+function RPRew(){const el=document.getElementById('pvw-rewards'),rews=APP.rewards||[];let h=`<div class="lbl mb16">Rewards on Offer</div>`;if(!rews.length)h+=`<div class="empty">Nothing posted yet — check back soon</div>`;else rews.forEach(r=>{h+=`<div class="reward-card"><div style="font-size:16px;margin-bottom:4px">${r.title}</div>${r.desc?`<div style="font-size:13px;color:var(--t2);font-weight:400">${r.desc}</div>`:''}</div>`;});if((APP.wallOfFame||[]).length){h+=`<div class="lbl mt20 mb12">Wall of Fame</div>`;APP.wallOfFame.forEach(w=>{h+=`<div class="ann-card"><div style="font-size:13px;font-weight:400">${w.text}</div><div style="font-size:10px;color:var(--t3);margin-top:5px">${fd(w.date)}</div></div>`;});}el.innerHTML=h;}
+
+async function boot(){initFB();await loadAll();document.getElementById('loading').classList.add('gone');document.getElementById('ptitle').textContent=APP.settings.appName;if(!APP.settings.hostPin){pinCtx='host';startPinSet('Set host PIN','First time — you will set a player PIN after');}else{document.getElementById('plbl').textContent='Enter PIN';}document.getElementById('pin-screen').classList.add('show');}
+boot();
+</script>
+</body>
+</html>
